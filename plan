@@ -1,0 +1,13 @@
+- gateway API
+- lambda
+- 1 endpoint GET
+- iam
+- dynamodb
+
+- secret manager
+- usage plan/API key
+
+- 2 endpoint PUT/POST
+- 3 endpoint DELETE
+
+paczki: aws-sdk-v3
