@@ -4,10 +4,16 @@
 - iam
 - dynamodb
 
-- secret manager
+- secret manager (nazwa dynamo-db/s3)
 - usage plan/API key
+- api stage
+- custom policy (dynamo-db)
 
 - 2 endpoint PUT/POST
 - 3 endpoint DELETE
+- wstepna walidacja na poziomie api gateway
+
+- dynamo-db events sends data to sqs
+- lambda zczytuje eventy z sqs i zapisuje w s3
 
 paczki: aws-sdk-v3
