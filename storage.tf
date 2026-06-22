@@ -36,3 +36,19 @@ resource "aws_dynamodb_table" "DBSessionHistory" {
     }
 }
 
+resource "aws_dynamodb_table" "DBUserStats" {
+    name = "DBUserStats"
+    billing_mode = "PAY_PER_REQUEST"
+    hash_key = "UserId"
+    range_key = "SK"
+
+    attribute {
+        name = "UserId"
+        type = "S"
+    }
+
+    attribute {
+        name = "SK"
+        type = "S"
+    }
+}
