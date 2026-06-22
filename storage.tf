@@ -17,6 +17,11 @@ resource "aws_dynamodb_table" "DBActiveSessions" {
         name = "SessionId"
         type = "S"
     }
+
+    ttl {
+        attribute_name = "TimeToExist"
+        enabled = true
+    }
 }
 
 resource "aws_dynamodb_table" "DBSessionHistory" {
@@ -33,6 +38,11 @@ resource "aws_dynamodb_table" "DBSessionHistory" {
     attribute {
         name = "SessionId"
         type = "S"
+    }
+
+    ttl {
+        attribute_name = "TimeToExist"
+        enabled = true
     }
 }
 
