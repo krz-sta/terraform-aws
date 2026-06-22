@@ -12,3 +12,6 @@ provider "aws" {
     profile = "default"
 }
 
+module "lambda_functions" {
+    source = "./lambda"
+}
