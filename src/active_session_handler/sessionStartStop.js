@@ -115,7 +115,7 @@ async function cancelSession(event, docClient) {
 }
 
 async function getActiveSession(event, docClient) {
-    const UserId = event.queryStringParameters.UserId;
+    const UserId = event?.queryStringParameters?.UserId;
 
     if (!UserId) {
         return {
