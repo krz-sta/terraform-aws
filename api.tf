@@ -87,6 +87,26 @@ resource "aws_api_gateway_integration" "ActiveSessionCancelIntegration" {
 resource "aws_api_gateway_deployment" "WorkoutStatsAPIDeployment" {
     depends_on = [aws_api_gateway_integration.GetStatusIntegration, aws_api_gateway_integration.StartActiveSessionIntegration, aws_api_gateway_integration.ActiveSessionCancelIntegration, aws_api_gateway_integration.GetActiveSessionIntegration]
     rest_api_id = aws_api_gateway_rest_api.WorkoutStatsAPI.id
+
+    triggers = {
+        redeployment = sha1(jsonencode([
+            aws_api_gateway_resource.StatusResource.id,
+            aws_api_gateway_method.GetStatusMethod.id,
+            aws_api_gateway_integration.GetStatusIntegration.id,
+            aws_api_gateway_resource.ActiveSessionResource.id,
+            aws_api_gateway_method.StartActiveSessionMethod.id,
+            aws_api_gateway_integration.StartActiveSessionIntegration.id,
+            aws_api_gateway_method.GetActiveSessionMethod.id,
+            aws_api_gateway_integration.GetActiveSessionIntegration.id,
+            aws_api_gateway_resource.ActiveSessionCancelResource.id,
+            aws_api_gateway_method.ActiveSessionCancelMethod.id,
+            aws_api_gateway_integration.ActiveSessionCancelIntegration.id
+        ]))
+    }
+
+    lifecycle {
+        create_before_destroy = true
+    }
 }
 
 resource "aws_api_gateway_stage" "WorkoutStatsAPIStage" {
