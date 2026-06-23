@@ -1,4 +1,4 @@
-const { PutCommand, DeleteCommand } = require("@aws-sdk/lib-dynamodb");
+const { PutCommand, DeleteCommand, QueryCommand } = require("@aws-sdk/lib-dynamodb");
 const crypto = require("crypto");
 
 const TABLE_NAME = "DBActiveSessions";
@@ -15,22 +15,38 @@ async function startSession(event, docClient) {
         };
     }
 
-    const SessionId = crypto.randomUUID();
-
-    const TimeToExist = Math.floor(Date.now() / 1000) + (8 * 3600); // 8h
-    
-    const sessionItem = {
-        UserId: body.UserId,
-        SessionId: SessionId,
-        TimeToExist: TimeToExist,
-        startTime: new Date().toISOString()
-    };
-
     try {
+        const existing = await docClient.send(new QueryCommand({
+            TableName: TABLE_NAME,
+            KeyConditionExpression: 'UserId = :userId',
+            ExpressionAttributeValues: {
+                ':userId': body.UserId
+            }
+        }));
+
+        if (existing.Items.length > 0) {
+            return {
+                statusCode: 409,
+                body: JSON.stringify({
+                    message: 'You can\'t have more than one active session.',
+                    SessionId: existing.Items[0].SessionId
+                })
+            };
+        }
+
+        const SessionId = crypto.randomUUID();
+        const TimeToExist = Math.floor(Date.now() / 1000) + (8 * 3600); // 8h
+        
+        const sessionItem = {
+            UserId: body.UserId,
+            SessionId: SessionId,
+            TimeToExist: TimeToExist,
+            startTime: new Date().toISOString()
+        };
+
         await docClient.send(new PutCommand({
             TableName: TABLE_NAME,
-            Item: sessionItem,
-            ConditionExpression: 'attribute_not_exists(UserId)'
+            Item: sessionItem
         }));
 
         return {
@@ -41,15 +57,6 @@ async function startSession(event, docClient) {
             })
         };
     } catch (error) {
-        if (error.name === 'ConditionalCheckFailedException') {
-            return {
-                statusCode: 409,
-                body: JSON.stringify({
-                    message: 'You can\' have more than one active session.'
-                })
-            };
-        }
-
         throw error;
     }
 }
@@ -69,11 +76,8 @@ async function cancelSession(event, docClient) {
     try {
         await docClient.send(new DeleteCommand({
             TableName: TABLE_NAME,
-            Key: { UserId },
-            ConditionExpression: 'SessionId = :sessionId',
-            ExpressionAttributeValues: {
-                ':sessionId': SessionId
-            }
+            Key: { UserId, SessionId },
+            ConditionExpression: 'attribute_exists(UserId)'
         }));
 
         return {
