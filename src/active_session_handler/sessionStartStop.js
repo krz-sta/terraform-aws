@@ -5,7 +5,7 @@ const TABLE_NAME = "DBActiveSessions";
 
 async function startSession(event, docClient) {
     const body = JSON.parse(event.body || '{}');
-    
+
     if (!body.UserId) {
         return {
             statusCode: 400,
@@ -36,7 +36,7 @@ async function startSession(event, docClient) {
 
         const SessionId = crypto.randomUUID();
         const TimeToExist = Math.floor(Date.now() / 1000) + (8 * 3600); // 8h
-        
+
         const sessionItem = {
             UserId: body.UserId,
             SessionId: SessionId,
@@ -56,8 +56,15 @@ async function startSession(event, docClient) {
                 SessionId: SessionId
             })
         };
+
     } catch (error) {
-        throw error;
+        console.error('Error starting session:', error);
+        return {
+            statusCode: 500,
+            body: JSON.stringify({
+                message: 'Internal server error.'
+            })
+        };
     }
 }
 
@@ -86,6 +93,7 @@ async function cancelSession(event, docClient) {
                 message: 'Session cancelled.'
             })
         };
+        
     } catch (error) {
         if (error.name === 'ConditionalCheckFailedException') {
             return {
@@ -96,8 +104,60 @@ async function cancelSession(event, docClient) {
             };
         }
 
-        throw error;
+        console.error('Error cancelling session:', error);
+        return {
+            statusCode: 500,
+            body: JSON.stringify({
+                message: 'Internal server error.'
+            })
+        };
     }
 }
 
-module.exports = { startSession, cancelSession };
+async function getActiveSession(event, docClient) {
+    const { UserId } = JSON.parse(event.body || '{}');
+
+    if (!UserId) {
+        return {
+            statusCode: 400,
+            body: JSON.stringify({
+                message: 'Missing UserId in request body.'
+            })
+        };
+    }
+
+    try {
+        const result = await docClient.send(new QueryCommand({
+            TableName: TABLE_NAME,
+            KeyConditionExpression: 'UserId = :userId',
+            ExpressionAttributeValues: {
+                ':userId': UserId
+            }
+        }));
+
+        if (result.Items.length === 0) {
+            return {
+                statusCode: 404,
+                body: JSON.stringify({
+                    message: 'No active session found for this user.'
+                })
+            };
+        }
+
+        return {
+            statusCode: 200,
+            body: JSON.stringify(result.Items[0])
+        };
+
+    } catch (error) {
+        console.error('Error getting active session:', error);
+        return {
+            statusCode: 500,
+            body: JSON.stringify({
+                message: 'Internal server error.'
+            })
+        };
+    }
+}
+
+module.exports = { startSession, cancelSession, getActiveSession };
