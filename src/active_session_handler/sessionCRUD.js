@@ -86,6 +86,41 @@ async function updateSession(event, docClient) {
                     Reps: body.NewSet.Reps
                 });
                 break;
+
+            case 'UPDATE_SET':
+                if (!exerciseName || body.SetIndex === undefined || !body.UpdatedSet) {
+                    return {
+                        statusCode: 400,
+                        body: JSON.stringify({
+                            message: 'Missing ExerciseName, SetIndex or UpdatedSet for UPDATE_SET action.'
+                        })
+                    };
+                }
+
+                if (!updatedExercises[exerciseName] || !updatedExercises[exerciseName].Sets[body.SetIndex]) {
+                    return {
+                        statusCode: 404,
+                        body: JSON.stringify({
+                            message: 'Exercise or set not found.'
+                        })
+                    };
+                }
+                
+                if (body.UpdatedSet.Weight === undefined || !body.UpdatedSet.Reps) {
+                    return {
+                        statusCode: 400,
+                        body: JSON.stringify({
+                            message: 'UpdatedSet must include Weight and Reps. For bodyweight exercises, set Weight to 0.'
+                        })
+                    };
+                }
+
+                updatedExercises[exerciseName].Sets[body.SetIndex] = {
+                    Weight: body.UpdatedSet.Weight,
+                    Reps: body.UpdatedSet.Reps
+                };
+                break;
+
                 
             default:
                 return {
