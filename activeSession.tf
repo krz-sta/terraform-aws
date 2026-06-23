@@ -70,7 +70,7 @@ resource "aws_lambda_permission" "active_session_lambda_permission" {
 
 resource "aws_lambda_function" "active_session_lambda" {
     function_name = "active_session_lambda"
-    runtime = "nodejs20.x"
+    runtime = "nodejs24.x"
     handler = "index.handler"
     filename = data.archive_file.active_session_lambda_zip.output_path
     code_sha256 = data.archive_file.active_session_lambda_zip.output_base64sha256

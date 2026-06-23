@@ -31,7 +31,7 @@ resource "aws_lambda_permission" "status_lambda_permission" {
 
 resource "aws_lambda_function" "status_lambda" {
     function_name = "status_lambda"
-    runtime = "nodejs20.x"
+    runtime = "nodejs24.x"
     handler = "index.handler"
     filename = data.archive_file.status_lambda_zip.output_path
     code_sha256 = data.archive_file.status_lambda_zip.output_base64sha256
