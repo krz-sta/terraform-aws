@@ -1,6 +1,7 @@
 const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
 const { DynamoDBDocumentClient } = require('@aws-sdk/lib-dynamodb');
 const { startSession, cancelSession, getActiveSession } = require('./sessionStartStop');
+const { updateSession } = require('./sessionCRUD');
 
 const client = new DynamoDBClient({});
 const docClient = DynamoDBDocumentClient.from(client);
@@ -22,6 +23,10 @@ module.exports.handler = async (event) => {
             return await getActiveSession(event, docClient);
         }
 
+        if (method === 'PATCH' && path === '/active-session') {
+            return await updateSession(event, docClient);
+        }
+
         return {
             statusCode: 404,
             body: JSON.stringify({
@@ -30,6 +35,7 @@ module.exports.handler = async (event) => {
         };
         
     } catch (error) {
+        console.error('Error handling request:', error);
         return {
             statusCode: 500,
             body: JSON.stringify({
