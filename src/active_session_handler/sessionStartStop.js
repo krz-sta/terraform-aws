@@ -4,7 +4,17 @@ const crypto = require("crypto");
 const TABLE_NAME = "DBActiveSessions";
 
 async function startSession(event, docClient) {
-    const body = JSON.parse(event.body || '{}');
+    let body;
+    try {
+        body = JSON.parse(event.body || '{}');
+    } catch (error) {
+        return {
+            statusCode: 400,
+            body: JSON.stringify({
+                message: 'Invalid JSON in request body.'
+            })
+        };
+    }
 
     if (!body.UserId) {
         return {

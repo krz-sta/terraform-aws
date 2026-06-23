@@ -3,7 +3,17 @@ const { UpdateCommand, GetCommand } = require('@aws-sdk/lib-dynamodb');
 const TABLE_NAME = "DBActiveSessions";
 
 async function updateSession(event, docClient) {
-    const body = JSON.parse(event.body || '{}');
+    let body;
+    try {
+        body = JSON.parse(event.body || '{}');
+    } catch (error) {
+        return {
+            statusCode: 400,
+            body: JSON.stringify({
+                message: 'Invalid JSON in request body.'
+            })
+        };
+    }
 
     if (!body.UserId || !body.SessionId || !body.Action) {
         return {
