@@ -121,6 +121,50 @@ async function updateSession(event, docClient) {
                 };
                 break;
 
+            case 'DELETE_EXERCISE':
+                if (!exerciseName) {
+                    return {
+                        statusCode: 400,
+                        body: JSON.stringify({
+                            message: 'Missing ExerciseName for DELETE_EXERCISE action.'
+                        })
+                    };
+                }
+
+                if (!updatedExercises[exerciseName]) {
+                    return {
+                        statusCode: 404,
+                        body: JSON.stringify({
+                            message: 'Exercise not found.'
+                        })
+                    };
+                }
+                    
+                delete updatedExercises[exerciseName];
+                break;
+
+            case 'DELETE_SET':
+                if (!exerciseName || body.SetIndex === undefined) {
+                    return {
+                        statusCode: 400,
+                        body: JSON.stringify({
+                            message: 'Missing ExerciseName or SetIndex for DELETE_SET action.'
+                        })
+                    };
+                }
+
+                if (!updatedExercises[exerciseName] || !updatedExercises[exerciseName].Sets[body.SetIndex]) {
+                    return {
+                        statusCode: 404,
+                        body: JSON.stringify({
+                            message: 'Exercise or set not found.'
+                        })
+                    };
+                }
+
+                updatedExercises[exerciseName].Sets.splice(body.SetIndex, 1);
+                break;
+
                 
             default:
                 return {
@@ -146,7 +190,7 @@ async function updateSession(event, docClient) {
         return {
             statusCode: 200,
             body: JSON.stringify({
-                message: 'Exercise added successfully.',
+                message: `Action: ${body.Action} committed successfully.`,
                 exercises: updatedExercises
             })
         }
