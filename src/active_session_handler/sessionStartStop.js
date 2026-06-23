@@ -93,7 +93,7 @@ async function cancelSession(event, docClient) {
                 message: 'Session cancelled.'
             })
         };
-        
+
     } catch (error) {
         if (error.name === 'ConditionalCheckFailedException') {
             return {
@@ -115,13 +115,13 @@ async function cancelSession(event, docClient) {
 }
 
 async function getActiveSession(event, docClient) {
-    const { UserId } = JSON.parse(event.body || '{}');
+    const UserId = event.queryStringParameters.UserId;
 
     if (!UserId) {
         return {
             statusCode: 400,
             body: JSON.stringify({
-                message: 'Missing UserId in request body.'
+                message: 'Missing UserId in request parameters.'
             })
         };
     }
