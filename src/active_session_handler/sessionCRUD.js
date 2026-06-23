@@ -58,6 +58,35 @@ async function updateSession(event, docClient) {
                 updatedExercises[exerciseName] = { Sets: [] };
                 break;
 
+            case 'ADD_SET':
+                if (!exerciseName || !body.NewSet) {
+                    return {
+                        statusCode: 400,
+                        body: JSON.stringify({
+                            message: 'Missing ExerciseName or NewSet for ADD_SET action.'
+                        })
+                    };
+                }
+
+                if (body.NewSet.Weight === undefined || !body.NewSet.Reps) {
+                    return {
+                        statusCode: 400,
+                        body: JSON.stringify({
+                            message: 'NewSet must include Weight and Reps. For bodyweight exercises, set Weight to 0.'
+                        })
+                    };
+                }
+                    
+                if (!updatedExercises[exerciseName]) {
+                    updatedExercises[exerciseName] = { Sets: [] };
+                }
+
+                updatedExercises[exerciseName].Sets.push({
+                    Weight: body.NewSet.Weight,
+                    Reps: body.NewSet.Reps
+                });
+                break;
+                
             default:
                 return {
                     statusCode: 400,
