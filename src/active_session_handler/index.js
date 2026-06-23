@@ -10,11 +10,11 @@ module.exports.handler = async (event) => {
     const path = event.path;
 
     try {
-        if (method === 'POST' && path === '/session/start') {
+        if (method === 'POST' && path === '/active-session') {
             return await startSession(event, docClient);
         }
 
-        if (method === 'POST' && path === '/session/cancel') {
+        if (method === 'POST' && path === '/active-session/cancel') {
             return await cancelSession(event, docClient);
         }
 
