@@ -14,7 +14,7 @@ module.exports.handler = async (event) => {
             return await startSession(event, docClient);
         }
 
-        if (method === 'POST' && path === '/active-session/cancel') {
+        if (method === 'DELETE' && path === '/active-session') {
             return await cancelSession(event, docClient);
         }
 

@@ -37,13 +37,6 @@ resource "aws_api_gateway_method" "StartActiveSessionMethod" {
     authorization = "NONE"
 }
 
-resource "aws_api_gateway_method" "GetActiveSessionMethod" {
-    rest_api_id = aws_api_gateway_rest_api.WorkoutStatsAPI.id
-    resource_id = aws_api_gateway_resource.ActiveSessionResource.id
-    http_method = "GET"
-    authorization = "NONE"
-}
-
 resource "aws_api_gateway_integration" "StartActiveSessionIntegration" {
     rest_api_id = aws_api_gateway_rest_api.WorkoutStatsAPI.id
     resource_id = aws_api_gateway_resource.ActiveSessionResource.id
@@ -51,6 +44,13 @@ resource "aws_api_gateway_integration" "StartActiveSessionIntegration" {
     integration_http_method = "POST"
     type = "AWS_PROXY"
     uri = aws_lambda_function.active_session_lambda.invoke_arn
+}
+
+resource "aws_api_gateway_method" "GetActiveSessionMethod" {
+    rest_api_id = aws_api_gateway_rest_api.WorkoutStatsAPI.id
+    resource_id = aws_api_gateway_resource.ActiveSessionResource.id
+    http_method = "GET"
+    authorization = "NONE"
 }
 
 resource "aws_api_gateway_integration" "GetActiveSessionIntegration" {
@@ -62,22 +62,16 @@ resource "aws_api_gateway_integration" "GetActiveSessionIntegration" {
     uri = aws_lambda_function.active_session_lambda.invoke_arn
 }
 
-resource "aws_api_gateway_resource" "ActiveSessionCancelResource" {
-    rest_api_id = aws_api_gateway_rest_api.WorkoutStatsAPI.id
-    parent_id = aws_api_gateway_resource.ActiveSessionResource.id
-    path_part = "cancel"
-}
-
 resource "aws_api_gateway_method" "ActiveSessionCancelMethod" {
     rest_api_id = aws_api_gateway_rest_api.WorkoutStatsAPI.id
-    resource_id = aws_api_gateway_resource.ActiveSessionCancelResource.id
-    http_method = "POST"
+    resource_id = aws_api_gateway_resource.ActiveSessionResource.id
+    http_method = "DELETE"
     authorization = "NONE"
 }
 
 resource "aws_api_gateway_integration" "ActiveSessionCancelIntegration" {
     rest_api_id = aws_api_gateway_rest_api.WorkoutStatsAPI.id
-    resource_id = aws_api_gateway_resource.ActiveSessionCancelResource.id
+    resource_id = aws_api_gateway_resource.ActiveSessionResource.id
     http_method = aws_api_gateway_method.ActiveSessionCancelMethod.http_method
     integration_http_method = "POST"
     type = "AWS_PROXY"
@@ -98,7 +92,6 @@ resource "aws_api_gateway_deployment" "WorkoutStatsAPIDeployment" {
             aws_api_gateway_integration.StartActiveSessionIntegration.id,
             aws_api_gateway_method.GetActiveSessionMethod.id,
             aws_api_gateway_integration.GetActiveSessionIntegration.id,
-            aws_api_gateway_resource.ActiveSessionCancelResource.id,
             aws_api_gateway_method.ActiveSessionCancelMethod.id,
             aws_api_gateway_integration.ActiveSessionCancelIntegration.id
         ]))

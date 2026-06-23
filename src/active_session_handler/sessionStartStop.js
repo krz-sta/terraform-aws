@@ -69,8 +69,7 @@ async function startSession(event, docClient) {
 }
 
 async function cancelSession(event, docClient) {
-    const { UserId, SessionId } = JSON.parse(event.body || '{}');
-
+    const { UserId, SessionId } = event?.queryStringParameters || {};
     if (!UserId || !SessionId) {
         return {
             statusCode: 400,
