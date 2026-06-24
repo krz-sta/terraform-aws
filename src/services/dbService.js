@@ -30,7 +30,20 @@ async function putSession(userId) {
     return sessionId;
 }
 
+async function getSession(userId, sessionId) {
+    const result = await docClient.send(new GetCommand({
+        TableName: "DBActiveSessions",
+        Key: {
+            UserId: userId,
+            SessionId: sessionId
+        }
+    }));
+
+    return result.Item || null;
+}
+
 module.exports = {
     querySession,
-    putSession
+    putSession,
+    getSession
 };

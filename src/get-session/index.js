@@ -1,5 +1,5 @@
+const getSession = require("../services/dbService").getSession;
 const docClient = require("../helpers/dbClient").docClient;
-const { GetCommand } = require('@aws-sdk/lib-dynamodb');
 
 module.exports.handler = async (event) => {
     console.log('Logging event:');
@@ -18,15 +18,9 @@ module.exports.handler = async (event) => {
     }
 
     try {
-        const result = await docClient.send(new GetCommand({
-            TableName: "DBActiveSessions",
-            Key: {
-                UserId: userId,
-                SessionId: sessionId
-            }
-        }));
+        const session = await getSession(userId, sessionId);
 
-        if (!result.Item) {
+        if (!session) {
             return {
                 statusCode: 404,
                 body: JSON.stringify({
@@ -37,7 +31,7 @@ module.exports.handler = async (event) => {
 
         return {
             statusCode: 200,
-            body: JSON.stringify(result.Item)
+            body: JSON.stringify(session)
         };
 
     } catch (e) {
