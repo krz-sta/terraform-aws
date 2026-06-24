@@ -5,7 +5,8 @@ async function runBuild() {
         entryPoints: [
             'src/get-status/index.js',
             'src/start-session/index.js',
-            'src/get-session/index.js'
+            'src/get-session/index.js',
+            'src/cancel-session/index.js'
         ],
         bundle: true,
         minify: true,

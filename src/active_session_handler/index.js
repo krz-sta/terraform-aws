@@ -12,18 +12,6 @@ module.exports.handler = async (event) => {
     const path = event.path;
 
     try {
-        if (method === 'POST' && path === '/active-session') {
-            return await startSession(event, docClient);
-        }
-
-        if (method === 'DELETE' && path === '/active-session') {
-            return await cancelSession(event, docClient);
-        }
-
-        if (method === 'GET' && path === '/active-session') {
-            return await getActiveSession(event, docClient);
-        }
-
         if (method === 'PATCH' && path === '/active-session') {
             return await updateSession(event, docClient);
         }
