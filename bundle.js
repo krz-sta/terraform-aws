@@ -1,0 +1,20 @@
+const esbuild = require("esbuild");
+
+async function runBuild() {
+    await esbuild.build({
+        entryPoints: [
+            'src/get-status/index.js',
+            'src/active_session_handler/index.js'
+        ],
+        bundle: true,
+        minify: true,
+        platform: 'node',
+        target: 'node24',
+        outdir: 'dist',
+        external: ['@aws-sdk/*']
+    });
+
+    console.log('Build success.')
+}
+
+runBuild().catch(() => process.exit(1))

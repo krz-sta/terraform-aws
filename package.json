@@ -1,0 +1,23 @@
+{
+  "name": "terraform-aws",
+  "version": "1.0.0",
+  "description": "",
+  "homepage": "https://github.com/krz-sta/terraform-aws#readme",
+  "bugs": {
+    "url": "https://github.com/krz-sta/terraform-aws/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/krz-sta/terraform-aws.git"
+  },
+  "license": "ISC",
+  "author": "",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "bundle": "node bundle.js"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.1"
+  }
+}
