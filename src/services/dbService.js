@@ -42,8 +42,20 @@ async function getSession(userId, sessionId) {
     return result.Item || null;
 }
 
+async function deleteSession(userId, sessionId) {
+    await docClient.send(new DeleteCommand({
+        TableName: "DBActiveSessions",
+        Key: {
+            UserId: userId,
+            SessionId: sessionId
+        },
+        ConditionExpression: 'attribute_exists(SessionId)'
+    }));
+}
+
 module.exports = {
     querySession,
     putSession,
-    getSession
+    getSession,
+    deleteSession
 };

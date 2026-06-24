@@ -1,4 +1,4 @@
-const { DeleteCommand } = require("@aws-sdk/lib-dynamodb");
+const deleteSession = require("../services/dbService").deleteSession;
 const docClient = require("../helpers/dbClient").docClient;
 
 module.exports.handler = async (event) => {
@@ -18,14 +18,7 @@ module.exports.handler = async (event) => {
     }
 
     try {
-        await docClient.send(new DeleteCommand({
-            TableName: "DBActiveSessions",
-            Key: {
-                UserId: userId,
-                SessionId: sessionId
-            },
-            ConditionExpression: 'attribute_exists(SessionId)'
-        }));
+        await deleteSession(userId, sessionId);
 
         return {
             statusCode: 200,
