@@ -1,7 +1,7 @@
 data "archive_file" "status_lambda_zip" {
     type = "zip"
     source_dir = "${path.module}/src/get-status"
-    output_path = "${path.module}/src/get-status.zip"
+    output_path = "${path.module}/src/zip/get-status.zip"
 }
 
 resource "aws_iam_role" "status_lambda_role" {
