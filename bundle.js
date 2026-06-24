@@ -9,7 +9,7 @@ async function runBuild() {
             'src/cancel-session/index.js'
         ],
         bundle: true,
-        minify: true,
+        minify: false,
         platform: 'node',
         target: 'node24',
         outdir: 'dist',
