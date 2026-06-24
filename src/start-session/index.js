@@ -1,5 +1,5 @@
 const docClient = require("../helpers/dbClient").docClient;
-const { QueryCommand, PutCommand } = require("@aws-sdk/lib-dynamodb");
+const { querySession, putSession } = require("../services/dbService");
 const crypto = require("crypto");
 
 module.exports.handler = async (event) => {
@@ -9,6 +9,7 @@ module.exports.handler = async (event) => {
     try {
         body = JSON.parse(event.body);
     } catch (e) {
+        console.error('Error parsing JSON:', e);
         return {
             statusCode: 400,
             body: JSON.stringify({
@@ -27,36 +28,19 @@ module.exports.handler = async (event) => {
     }
 
     try {
-        const existing = await docClient.send(new QueryCommand({
-            TableName: "DBActiveSessions",
-            KeyConditionExpression: 'UserId = :userId',
-            ExpressionAttributeValues: {
-                ':userId': body.userId
-            }
-        }));
+        const existing = await querySession(body.userId);
 
-        if (existing.Items.length > 0) {
+        if (existing) {
             return {
                 statusCode: 409,
                 body: JSON.stringify({
                     message: 'You can\'t have more than one active session.',
-                    SessionId: existing.Items[0].SessionId
+                    SessionId: existing.SessionId
                 })
             };
         }
 
-        const sessionId = crypto.randomUUID();
-        const ttl = Math.floor(Date.now() / 1000) + (8 * 3600); // 8 hours
-
-        await docClient.send(new PutCommand({
-            TableName: "DBActiveSessions",
-            Item: {
-                UserId: body.userId,
-                SessionId: sessionId,
-                TimeToExist: ttl,
-                startTime: new Date().toISOString()
-            }
-        }));
+        const sessionId = await putSession(body.userId);
 
         return {
             statusCode: 201,
@@ -67,10 +51,11 @@ module.exports.handler = async (event) => {
         };
 
     } catch (e) {
+        console.error('Error creating session:', e);
         return {
             statusCode: 500,
             body: JSON.stringify({
-                message: 'Error creating session.'
+                message: 'Error creating session.',
             })
         };
     }
