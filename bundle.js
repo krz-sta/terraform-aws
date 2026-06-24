@@ -4,7 +4,7 @@ async function runBuild() {
     await esbuild.build({
         entryPoints: [
             'src/get-status/index.js',
-            'src/active_session_handler/index.js'
+            'src/start-session/index.js'
         ],
         bundle: true,
         minify: true,
