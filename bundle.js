@@ -6,7 +6,8 @@ async function runBuild() {
             'src/get-status/index.js',
             'src/start-session/index.js',
             'src/get-session/index.js',
-            'src/cancel-session/index.js'
+            'src/cancel-session/index.js',
+            'src/save-session/index.js'
         ],
         bundle: true,
         minify: false,

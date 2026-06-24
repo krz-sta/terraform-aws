@@ -210,7 +210,8 @@ async function updateSession(event, docClient) {
         return {
             statusCode: 500,
             body: JSON.stringify({
-                message: 'Internal server error.'
+                message: 'Internal server error.',
+                error: error.message
             })
         };
     }

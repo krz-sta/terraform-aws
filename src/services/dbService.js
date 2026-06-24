@@ -1,5 +1,5 @@
 const docClient = require('../helpers/dbClient').docClient;
-const { GetCommand, DeleteCommand, PutCommand, QueryCommand } = require('@aws-sdk/lib-dynamodb');
+const { GetCommand, DeleteCommand, PutCommand, QueryCommand, TransactWriteCommand } = require('@aws-sdk/lib-dynamodb');
 
 async function querySession(userId) {
     const existing = await docClient.send(new QueryCommand({
@@ -53,9 +53,33 @@ async function deleteSession(userId, sessionId) {
     }));
 }
 
+async function saveSession(sessionData) {
+    await docClient.send(new TransactWriteCommand({
+        TransactItems: [
+            {
+                Put: {
+                    TableName: "DBSessionHistory",
+                    Item: sessionData
+                }
+            },
+            {
+                Delete: {
+                    TableName: "DBActiveSessions",
+                    Key: {
+                        UserId: sessionData.UserId,
+                        SessionId: sessionData.SessionId
+                    },
+                    ConditionExpression: 'attribute_exists(UserId) AND attribute_exists(SessionId)'
+                }
+            }
+        ]
+    }));
+}
+
 module.exports = {
     querySession,
     putSession,
     getSession,
-    deleteSession
+    deleteSession,
+    saveSession
 };

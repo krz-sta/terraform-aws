@@ -1,8 +1,6 @@
 const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
 const { DynamoDBDocumentClient } = require('@aws-sdk/lib-dynamodb');
-const { startSession, cancelSession, getActiveSession } = require('./sessionStartStop');
 const { updateSession } = require('./sessionCRUD');
-const { endAndSaveSession } = require('./saveSession');
 
 const client = new DynamoDBClient({});
 const docClient = DynamoDBDocumentClient.from(client);
@@ -14,10 +12,6 @@ module.exports.handler = async (event) => {
     try {
         if (method === 'PATCH' && path === '/active-session') {
             return await updateSession(event, docClient);
-        }
-
-        if (method == 'POST' && path === '/active-session/save') {
-            return await endAndSaveSession(event, docClient);
         }
         
         return {
@@ -32,7 +26,8 @@ module.exports.handler = async (event) => {
         return {
             statusCode: 500,
             body: JSON.stringify({
-                message: 'Internal server error.'
+                message: 'Internal server error.',
+                error: error.message
             })
         };
     }

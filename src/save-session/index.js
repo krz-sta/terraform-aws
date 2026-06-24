@@ -1,13 +1,10 @@
-const { GetCommand, TransactWriteCommand } = require('@aws-sdk/lib-dynamodb');
+const { getSession, saveSession } = require("../services/dbService");
 
-const ACTIVE_TABLE = "DBActiveSessions";
-const HISTORY_TABLE = "DBSessionHistory";
-
-async function endAndSaveSession(event, docClient) {
+module.exports.handler = async (event) => {
     let body;
     try {
         body = JSON.parse(event.body || '{}');
-    } catch (error) {
+    } catch (e) {
         return {
             statusCode: 400,
             body: JSON.stringify({
@@ -26,14 +23,7 @@ async function endAndSaveSession(event, docClient) {
     }
 
     try {
-        const getResult = await docClient.send(new GetCommand({
-            TableName: ACTIVE_TABLE,
-            Key: {
-                UserId: body.UserId,
-                SessionId: body.SessionId
-            }
-        }));
-        const currentSession = getResult.Item;
+        const currentSession = await getSession(body.UserId, body.SessionId);
 
         if (!currentSession) {
             return {
@@ -54,26 +44,7 @@ async function endAndSaveSession(event, docClient) {
             TimeToExist: Math.floor(Date.now() / 1000) + (30 * 24 * 3600)
         };
 
-        await docClient.send(new TransactWriteCommand({
-            TransactItems: [
-                {
-                   Put: {
-                       TableName: HISTORY_TABLE,
-                       Item: sessionHistoryItem
-                    } 
-                },
-                {
-                    Delete: {
-                        TableName: ACTIVE_TABLE,
-                        Key: {
-                            UserId: body.UserId,
-                            SessionId: body.SessionId
-                        },
-                        ConditionExpression: 'attribute_exists(UserId) AND attribute_exists(SessionId)'
-                    }
-                }
-            ]
-        }));
+        await saveSession(sessionHistoryItem);
 
         return {
             statusCode: 200,
@@ -83,25 +54,23 @@ async function endAndSaveSession(event, docClient) {
             })
         };
 
-
-    } catch (error) {
-        if (error.name === 'ConditionalCheckFailedException') {
+    } catch (e) {
+        if (e.name === 'ConditionalCheckFailedException') {
             return {
                 statusCode: 404,
                 body: JSON.stringify({
-                    message: 'Session not found or already ended.'
+                    message: 'Session not found.'
                 })
             };
         }
 
-        console.error('Error ending and saving session:', error);
+        console.error('Error ending session:', e);
         return {
             statusCode: 500,
             body: JSON.stringify({
-                message: 'Internal server error.'
+                message: 'Error ending session.',
+                error: e.message
             })
         };
     }
 }
-
-module.exports = { endAndSaveSession };
