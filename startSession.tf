@@ -22,7 +22,7 @@ resource "aws_iam_role" "StartSessionLambdaRole" {
 
 resource "aws_iam_policy" "StartSessionLambdaPolicy" {
     name = "start-session-lambda-policy"
-    description = "Allows start-session-lambda to write CloudWatch logs."
+    description = "Allows start-session-lambda to write CloudWatch logs, Query and Put items in DynamoDB."
     policy = jsonencode({
         Version = "2012-10-17"
         Statement = [

@@ -64,7 +64,7 @@ module.exports.handler = async (event) => {
                 message: 'Session started successfully.',
                 SessionId: sessionId
             })
-        };s
+        };
 
     } catch (e) {
         return {
