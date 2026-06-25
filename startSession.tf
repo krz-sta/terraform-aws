@@ -63,6 +63,12 @@ resource "aws_lambda_function" "StartSessionLambda" {
   layers = [
     aws_lambda_layer_version.SharedLibsLayer.arn
   ]
+
+  environment {
+    variables = {
+      ACTIVE_SESSIONS_DB_TABLE_NAME = var.ActiveSessionsDBTableName
+    }
+  }
 }
 
 resource "aws_lambda_permission" "StartSessionLambdaPermission" {
