@@ -19,7 +19,7 @@ async function runBuild() {
         platform: "node",
         target: "node24",
         outdir: "dist",
-        external: ["@aws-sdk/*"],
+        external: ["@aws-sdk/*", "ajv"],
     });
 
     console.log("Build success.");
