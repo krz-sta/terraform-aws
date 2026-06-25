@@ -1,8 +1,8 @@
-const crypto = require('crypto');
-const docClient = require('../helpers/dbClient').docClient;
-const { GetCommand, DeleteCommand, PutCommand, QueryCommand, TransactWriteCommand, UpdateCommand } = require('@aws-sdk/lib-dynamodb');
+import crypto from 'crypto';
+import { docClient } from '../helpers/dbClient.js';
+import { GetCommand, DeleteCommand, PutCommand, QueryCommand, TransactWriteCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
 
-async function querySession(userId) {
+export async function querySession(userId) {
     const existing = await docClient.send(new QueryCommand({
         TableName: "DBActiveSessions",
         KeyConditionExpression: 'UserId = :userId',
@@ -14,7 +14,7 @@ async function querySession(userId) {
     return existing.Items?.length > 0 ? existing.Items[0] : null;
 }
 
-async function putSession(userId) {
+export async function putSession(userId) {
     const sessionId = crypto.randomUUID();
     const ttl = Math.floor(Date.now() / 1000) + (8 * 3600); // 8 hours
 
@@ -31,7 +31,7 @@ async function putSession(userId) {
     return sessionId;
 }
 
-async function getSession(userId, sessionId) {
+export async function getSession(userId, sessionId) {
     const result = await docClient.send(new GetCommand({
         TableName: "DBActiveSessions",
         Key: {
@@ -43,7 +43,7 @@ async function getSession(userId, sessionId) {
     return result.Item || null;
 }
 
-async function deleteSession(userId, sessionId) {
+export async function deleteSession(userId, sessionId) {
     await docClient.send(new DeleteCommand({
         TableName: "DBActiveSessions",
         Key: {
@@ -54,7 +54,7 @@ async function deleteSession(userId, sessionId) {
     }));
 }
 
-async function saveSession(sessionData) {
+export async function saveSession(sessionData) {
     await docClient.send(new TransactWriteCommand({
         TransactItems: [
             {
@@ -77,7 +77,7 @@ async function saveSession(sessionData) {
     }));
 }
 
-async function updateSession(userId, sessionId, updatedExercises) {
+export async function updateSession(userId, sessionId, updatedExercises) {
     await docClient.send(new UpdateCommand({
         TableName: "DBActiveSessions",
         Key: {
@@ -90,12 +90,3 @@ async function updateSession(userId, sessionId, updatedExercises) {
         }
     }));
 }
-
-module.exports = {
-    querySession,
-    putSession,
-    getSession,
-    deleteSession,
-    saveSession,
-    updateSession
-};

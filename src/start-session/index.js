@@ -1,8 +1,7 @@
-const docClient = require("../helpers/dbClient").docClient;
-const { querySession, putSession } = require("../services/dbService");
-const crypto = require("crypto");
+import { querySession, putSession } from "../services/dbService.js";
+import crypto from "crypto";
 
-module.exports.handler = async (event) => {
+export const handler = async (event) => {
     console.log('Logging event:');
     console.log(event);
     let body;
@@ -59,4 +58,4 @@ module.exports.handler = async (event) => {
             })
         };
     }
-}
+};

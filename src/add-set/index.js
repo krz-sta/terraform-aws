@@ -1,6 +1,6 @@
-const { getSession, updateSession } = require('../services/dbService');
+import { getSession, updateSession } from '../services/dbService.js';
 
-module.exports.handler = async (event) => {
+export const handler = async (event) => {
     let body;
     try {
         body = JSON.parse(event.body || '{}');

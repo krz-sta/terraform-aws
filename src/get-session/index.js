@@ -1,7 +1,6 @@
-const getSession = require("../services/dbService").getSession;
-const docClient = require("../helpers/dbClient").docClient;
+import { getSession } from "../services/dbService.js";
 
-module.exports.handler = async (event) => {
+export const handler = async (event) => {
     console.log('Logging event:');
     console.log(event);
 
@@ -42,4 +41,4 @@ module.exports.handler = async (event) => {
             })
         }
     }
-}
+};

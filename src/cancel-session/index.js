@@ -1,6 +1,6 @@
-const deleteSession = require("../services/dbService").deleteSession;
+import { deleteSession } from "../services/dbService.js";
 
-module.exports.handler = async (event) => {
+export const handler = async (event) => {
     console.log('Logging event:');
     console.log(event);
     
@@ -44,4 +44,4 @@ module.exports.handler = async (event) => {
             })
         }
     }
-}
+};
