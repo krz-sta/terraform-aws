@@ -14,11 +14,11 @@ module.exports.handler = async (event) => {
         };
     }
 
-    if (!body.userId || !body.sessionId || !body.exerciseName) {
+    if (!body.userId || !body.sessionId || !body.exerciseName || !body.setData || typeof body.setIndex !== 'number') {
         return {
             statusCode: 400,
             body: JSON.stringify({
-                message: 'Missing userId, sessionId or exerciseName in request body.'
+                message: 'Missing userId, sessionId, exerciseName, setData or invalid setIndex in request body.'
             })
         };
     }
@@ -38,32 +38,32 @@ module.exports.handler = async (event) => {
         let updatedExercises = currentSession.Exercises || {};
         const exerciseName = body.exerciseName;
 
-        if (updatedExercises[exerciseName]) {
+        if (!updatedExercises[exerciseName] || !updatedExercises[exerciseName].Sets[body.setIndex]) {
             return {
-                statusCode: 409,
+                statusCode: 404,
                 body: JSON.stringify({
-                    message: 'Exercise already exists in the session.'
+                    message: 'Exercise or set not found in the session.'
                 })
             };
         }
 
-        updatedExercises[exerciseName] = { Sets: []};
+        updatedExercises[exerciseName].Sets[body.setIndex] = body.setData;
+
         await updateSession(body.userId, body.sessionId, updatedExercises);
 
         return {
             statusCode: 200,
             body: JSON.stringify({
-                message: 'Exercise added successfully.'
+                message: 'Set updated successfully.'
             })
         };
-
     } catch (e) {
-        console.log('Error adding exercise:', e);
+        console.error('Error updating set:', e);
         return {
             statusCode: 500,
             body: JSON.stringify({
-                message: 'Error adding exercise.'
+                message: 'Error updating set.'
             })
-        }
+        };
     }
-}
+};

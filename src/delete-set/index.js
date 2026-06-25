@@ -14,17 +14,16 @@ module.exports.handler = async (event) => {
         };
     }
 
-    try {
+    if (!body.userId || !body.sessionId || !body.exerciseName || typeof body.setIndex !== 'number') {
+        return {
+            statusCode: 400,
+            body: JSON.stringify({
+                message: 'Missing userId, sessionId, exerciseName or setIndex in request body.'
+            })
+        };
+    }
 
-        if (!body.userId || !body.sessionId || !body.exerciseName || typeof body.setIndex !== 'number') {
-            return {
-                statusCode: 400,
-                body: JSON.stringify({
-                    message: 'Missing userId, sessionId, exerciseName or setIndex in request body.'
-                })
-            };
-        }
-    
+    try {
         const currentSession = await getSession(body.userId, body.sessionId);
         
         if (!currentSession) {

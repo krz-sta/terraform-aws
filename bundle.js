@@ -12,6 +12,7 @@ async function runBuild() {
             'src/delete-exercise/index.js',
             'src/add-set/index.js',
             'src/delete-set/index.js',
+            'src/update-set/index.js'
         ],
         bundle: true,
         minify: false,
