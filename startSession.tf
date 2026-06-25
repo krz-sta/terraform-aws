@@ -59,6 +59,10 @@ resource "aws_lambda_function" "StartSessionLambda" {
   filename      = data.archive_file.StartSessionLambdaZip.output_path
   code_sha256   = data.archive_file.StartSessionLambdaZip.output_base64sha256
   role          = aws_iam_role.StartSessionLambdaRole.arn
+
+  layers = [
+    aws_lambda_layer_version.SharedLibsLayer.arn
+  ]
 }
 
 resource "aws_lambda_permission" "StartSessionLambdaPermission" {
