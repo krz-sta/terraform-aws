@@ -15,9 +15,7 @@ export const querySessionByUserId = async (userId) => {
     return existing.Items[0] || null;
 };
 
-export const startSession = async (userId, sessionId) => {
-    const ttl = Math.floor(Date.now() / 100) + 8 * 3600;
-
+export const startSession = async (userId, sessionId, ttl) => {
     await docClient.send(
         new PutCommand({
             TableName: "DBActiveSessions",
