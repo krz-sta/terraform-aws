@@ -10,7 +10,8 @@ async function runBuild() {
             'src/save-session/index.js',
             'src/add-exercise/index.js',
             'src/delete-exercise/index.js',
-            'src/add-set/index.js'
+            'src/add-set/index.js',
+            'src/delete-set/index.js',
         ],
         bundle: true,
         minify: false,

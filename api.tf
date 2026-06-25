@@ -19,7 +19,8 @@ resource "aws_api_gateway_deployment" "WorkoutStatsAPIDeployment" {
         aws_api_gateway_integration.SaveSessionIntegration,
         aws_api_gateway_integration.AddExerciseIntegration,
         aws_api_gateway_integration.DeleteExerciseIntegration,
-        aws_api_gateway_integration.AddSetIntegration
+        aws_api_gateway_integration.AddSetIntegration,
+        aws_api_gateway_integration.DeleteSetIntegration
     ]
 
     triggers = {
@@ -47,7 +48,10 @@ resource "aws_api_gateway_deployment" "WorkoutStatsAPIDeployment" {
         aws_api_gateway_integration.DeleteExerciseIntegration.id,
         aws_api_gateway_resource.AddSetResource.id,
         aws_api_gateway_method.AddSetMethod.id,
-        aws_api_gateway_integration.AddSetIntegration.id
+        aws_api_gateway_integration.AddSetIntegration.id,
+        aws_api_gateway_resource.DeleteSetResource.id,
+        aws_api_gateway_method.DeleteSetMethod.id,
+        aws_api_gateway_integration.DeleteSetIntegration.id
       ]))
     }
 

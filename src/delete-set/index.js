@@ -14,18 +14,19 @@ module.exports.handler = async (event) => {
         };
     }
 
-    if (!body.userId || !body.sessionId || !body.exerciseName || !body.setData) {
-        return {
-            statusCode: 400,
-            body: JSON.stringify({
-                message: 'Missing userId, sessionId, exerciseName or setData in request body.'
-            })
-        };
-    }
-
     try {
-        const currentSession = await getSession(body.userId, body.sessionId);
 
+        if (!body.userId || !body.sessionId || !body.exerciseName || typeof body.setIndex !== 'number') {
+            return {
+                statusCode: 400,
+                body: JSON.stringify({
+                    message: 'Missing userId, sessionId, exerciseName or setIndex in request body.'
+                })
+            };
+        }
+    
+        const currentSession = await getSession(body.userId, body.sessionId);
+        
         if (!currentSession) {
             return {
                 statusCode: 404,
@@ -34,32 +35,37 @@ module.exports.handler = async (event) => {
                 })
             };
         }
-
+    
         let updatedExercises = currentSession.Exercises || {};
         const exerciseName = body.exerciseName;
-
-        if (!updatedExercises[exerciseName]) {
-            updatedExercises[exerciseName] = { Sets: [] };
+    
+        if (!updatedExercises[exerciseName] || !updatedExercises[exerciseName].Sets[body.setIndex]) {
+            return {
+                statusCode: 404,
+                body: JSON.stringify({
+                    message: 'Exercise or set not found in the session.'
+                })
+            };
         }
-
-        updatedExercises[exerciseName].Sets.push(body.setData);
-
+    
+        updatedExercises[exerciseName].Sets.splice(body.setIndex, 1);
+    
         await updateSession(body.userId, body.sessionId, updatedExercises);
-
+    
         return {
             statusCode: 200,
             body: JSON.stringify({
-                message: 'Set added successfully.'
+                message: 'Set deleted successfully.'
             })
         };
-
+        
     } catch (e) {
-        console.error('Error adding set:', e);
+        console.error('Error deleting set:', e);
         return {
             statusCode: 500,
             body: JSON.stringify({
-                message: 'Error adding set.'
+                message: 'Error deleting set.'
             })
         };
     }
-};
+}

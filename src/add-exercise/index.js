@@ -1,6 +1,4 @@
-const getSession = require('../services/dbService').getSession;
-const updateSession = require('../services/dbService').updateSession;
-
+const { getSession, updateSession } = require('../utils/sessionUtils');
 
 module.exports.handler = async (event) => {
     let body;
@@ -58,7 +56,7 @@ module.exports.handler = async (event) => {
                 message: 'Exercise added successfully.'
             })
         };
-        
+
     } catch (e) {
         console.log('Error adding exercise:', e);
         return {
