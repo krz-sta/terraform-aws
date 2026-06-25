@@ -1,5 +1,7 @@
 import { parseBody } from "../helpers/parseBody.js";
 import { startSessionLogic } from "./start-session.helper.js";
+import { startSessionSchema } from "./start-session.schema.js";
+import { validateRequest } from "../helpers/validator.js";
 
 export const handler = async (event) => {
     const body = parseBody(event.body);
@@ -8,6 +10,18 @@ export const handler = async (event) => {
             statusCode: 400,
             body: JSON.stringify({
                 message: "Invalid JSON in request body.",
+            }),
+        };
+    }
+
+    const validationErrors = await validateRequest(startSessionSchema, body);
+
+    if (validationErrors) {
+        return {
+            statusCode: 400,
+            body: JSON.stringify({
+                message: "Schema validation failed.",
+                validationErrors,
             }),
         };
     }
