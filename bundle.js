@@ -3,7 +3,7 @@ import esbuild from 'esbuild';
 async function runBuild() {
     await esbuild.build({
         entryPoints: [
-            'src/get-status/index.js',
+            'src/get-status/handler.js',
             'src/start-session/index.js',
             'src/get-session/index.js',
             'src/cancel-session/index.js',
@@ -15,7 +15,7 @@ async function runBuild() {
             'src/update-set/index.js'
         ],
         bundle: true,
-        minify: false,
+        minify: true,
         platform: 'node',
         target: 'node24',
         outdir: 'dist',
