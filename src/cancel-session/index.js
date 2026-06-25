@@ -1,5 +1,4 @@
 const deleteSession = require("../services/dbService").deleteSession;
-const docClient = require("../helpers/dbClient").docClient;
 
 module.exports.handler = async (event) => {
     console.log('Logging event:');

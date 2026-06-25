@@ -1,5 +1,6 @@
+const crypto = require('crypto');
 const docClient = require('../helpers/dbClient').docClient;
-const { GetCommand, DeleteCommand, PutCommand, QueryCommand, TransactWriteCommand } = require('@aws-sdk/lib-dynamodb');
+const { GetCommand, DeleteCommand, PutCommand, QueryCommand, TransactWriteCommand, UpdateCommand } = require('@aws-sdk/lib-dynamodb');
 
 async function querySession(userId) {
     const existing = await docClient.send(new QueryCommand({
@@ -10,7 +11,7 @@ async function querySession(userId) {
         }
     }));
 
-    return existing.Items.length > 0 ? existing.Items[0] : null;
+    return existing.Items?.length > 0 ? existing.Items[0] : null;
 }
 
 async function putSession(userId) {
@@ -76,10 +77,25 @@ async function saveSession(sessionData) {
     }));
 }
 
+async function updateSession(userId, sessionId, updatedExercises) {
+    await docClient.send(new UpdateCommand({
+        TableName: "DBActiveSessions",
+        Key: {
+            UserId: userId,
+            SessionId: sessionId
+        },
+        UpdateExpression: 'SET Exercises = :updatedData',
+        ExpressionAttributeValues: {
+            ':updatedData': updatedExercises
+        }
+    }));
+}
+
 module.exports = {
     querySession,
     putSession,
     getSession,
     deleteSession,
-    saveSession
+    saveSession,
+    updateSession
 };
