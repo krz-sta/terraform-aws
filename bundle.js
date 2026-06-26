@@ -9,7 +9,7 @@ async function runBuild() {
             "src/cancel-session/handler.js",
             "src/save-session/index.js",
             "src/add-exercise/handler.js",
-            "src/delete-exercise/index.js",
+            "src/delete-exercise/handler.js",
             "src/add-set/index.js",
             "src/delete-set/index.js",
             "src/update-set/index.js",
