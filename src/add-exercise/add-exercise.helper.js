@@ -18,5 +18,5 @@ export const addExerciseLogic = async (userId, sessionId, exerciseName) => {
     }
 
     updatedExercises[exerciseName] = { Sets: [] };
-    await updateSession(userId, sessionId, exerciseName);
+    await updateSession(userId, sessionId, updatedExercises);
 };
