@@ -15,7 +15,7 @@ async function runBuild() {
             "src/update-set/handler.js",
         ],
         bundle: true,
-        minify: true,
+        minify: false,
         platform: "node",
         target: "node24",
         outdir: "dist",

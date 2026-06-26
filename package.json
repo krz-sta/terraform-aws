@@ -18,11 +18,11 @@
     "bundle": "node bundle.js"
   },
   "devDependencies": {
-    "esbuild": "^0.28.1"
+    "esbuild": "0.28.1"
   },
   "dependencies": {
-    "@aws-sdk/client-dynamodb": "^3.1075.0",
-    "@aws-sdk/lib-dynamodb": "^3.1075.0",
-    "ajv": "^8.20.0"
+    "@aws-sdk/client-dynamodb": "3.1075.0",
+    "@aws-sdk/lib-dynamodb": "3.1075.0",
+    "ajv": "8.20.0"
   }
 }
