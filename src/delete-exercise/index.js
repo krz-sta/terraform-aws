@@ -1,16 +1,19 @@
-import { getSession, updateSession } from '../services/dbService.js';
+import {
+    getSessionByIds,
+    updateSession,
+} from "../services/active-session.service.js";
 
 export const handler = async (event) => {
     let body;
     try {
-        body = JSON.parse(event.body || '{}')
+        body = JSON.parse(event.body || "{}");
     } catch (e) {
-        console.error('Error parsing JSON:', e);
+        console.error("Error parsing JSON:", e);
         return {
             statusCode: 400,
             body: JSON.stringify({
-                message: 'Invalid JSON in request body.'
-            })
+                message: "Invalid JSON in request body.",
+            }),
         };
     }
 
@@ -18,20 +21,24 @@ export const handler = async (event) => {
         return {
             statusCode: 400,
             body: JSON.stringify({
-                message: 'Missing userId, sessionId or exerciseName in request body.'
-            })
+                message:
+                    "Missing userId, sessionId or exerciseName in request body.",
+            }),
         };
     }
 
     try {
-        const currentSession = await getSession(body.userId, body.sessionId);
+        const currentSession = await getSessionByIds(
+            body.userId,
+            body.sessionId,
+        );
 
         if (!currentSession) {
             return {
                 statusCode: 404,
                 body: JSON.stringify({
-                    message: 'Session not found.'
-                })
+                    message: "Session not found.",
+                }),
             };
         }
 
@@ -42,8 +49,8 @@ export const handler = async (event) => {
             return {
                 statusCode: 404,
                 body: JSON.stringify({
-                    message: 'Exercise not found in the session.'
-                })
+                    message: "Exercise not found in the session.",
+                }),
             };
         }
 
@@ -54,18 +61,16 @@ export const handler = async (event) => {
         return {
             statusCode: 200,
             body: JSON.stringify({
-                message: 'Exercise deleted successfully.'
-            })
+                message: "Exercise deleted successfully.",
+            }),
         };
-
     } catch (e) {
-        console.error('Error deleting exercise:', e);
+        console.error("Error deleting exercise:", e);
         return {
             statusCode: 500,
             body: JSON.stringify({
-                message: 'Error deleting exercise.'
-            })
+                message: "Error deleting exercise.",
+            }),
         };
     }
-
-}
+};

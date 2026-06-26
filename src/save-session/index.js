@@ -1,36 +1,42 @@
-import { getSession, saveSession } from "../services/dbService.js";
+import {
+    getSessionByIds,
+    saveSession,
+} from "../services/active-session.service.js";
 
 export const handler = async (event) => {
     let body;
     try {
-        body = JSON.parse(event.body || '{}');
+        body = JSON.parse(event.body || "{}");
     } catch (e) {
         return {
             statusCode: 400,
             body: JSON.stringify({
-                message: 'Invalid JSON in request body.'
-            })
+                message: "Invalid JSON in request body.",
+            }),
         };
     }
-    
+
     if (!body.UserId || !body.SessionId) {
         return {
             statusCode: 400,
             body: JSON.stringify({
-                message: 'Missing UserId or SessionId in request body.'
-            })
+                message: "Missing UserId or SessionId in request body.",
+            }),
         };
     }
 
     try {
-        const currentSession = await getSession(body.UserId, body.SessionId);
+        const currentSession = await getSessionByIds(
+            body.UserId,
+            body.SessionId,
+        );
 
         if (!currentSession) {
             return {
                 statusCode: 404,
                 body: JSON.stringify({
-                    message: 'Session not found.'
-                })
+                    message: "Session not found.",
+                }),
             };
         }
 
@@ -41,7 +47,7 @@ export const handler = async (event) => {
             Exercises: currentSession.Exercises || {},
             startTime: currentSession.startTime,
             endTime: endTime,
-            TimeToExist: Math.floor(Date.now() / 1000) + (30 * 24 * 3600)
+            TimeToExist: Math.floor(Date.now() / 1000) + 30 * 24 * 3600,
         };
 
         await saveSession(sessionHistoryItem);
@@ -49,28 +55,27 @@ export const handler = async (event) => {
         return {
             statusCode: 200,
             body: JSON.stringify({
-                message: 'Session ended and saved to history.',
-                SessionId: body.SessionId
-            })
+                message: "Session ended and saved to history.",
+                SessionId: body.SessionId,
+            }),
         };
-
     } catch (e) {
-        if (e.name === 'ConditionalCheckFailedException') {
+        if (e.name === "ConditionalCheckFailedException") {
             return {
                 statusCode: 404,
                 body: JSON.stringify({
-                    message: 'Session not found.'
-                })
+                    message: "Session not found.",
+                }),
             };
         }
 
-        console.error('Error ending session:', e);
+        console.error("Error ending session:", e);
         return {
             statusCode: 500,
             body: JSON.stringify({
-                message: 'Error ending session.',
-                error: e.message
-            })
+                message: "Error ending session.",
+                error: e.message,
+            }),
         };
     }
-}
+};

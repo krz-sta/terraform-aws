@@ -1,37 +1,49 @@
-import { getSession, updateSession } from '../services/dbService.js';
+import {
+    getSessionByIds,
+    updateSession,
+} from "../services/active-session.service.js";
 
 export const handler = async (event) => {
     let body;
     try {
-        body = JSON.parse(event.body || '{}');
+        body = JSON.parse(event.body || "{}");
     } catch (e) {
-        console.error('Error parsing JSON:', e);
+        console.error("Error parsing JSON:", e);
         return {
             statusCode: 400,
             body: JSON.stringify({
-                message: 'Invalid JSON in request body.'
-            })
+                message: "Invalid JSON in request body.",
+            }),
         };
     }
 
-    if (!body.userId || !body.sessionId || !body.exerciseName || !body.setData) {
+    if (
+        !body.userId ||
+        !body.sessionId ||
+        !body.exerciseName ||
+        !body.setData
+    ) {
         return {
             statusCode: 400,
             body: JSON.stringify({
-                message: 'Missing userId, sessionId, exerciseName or setData in request body.'
-            })
+                message:
+                    "Missing userId, sessionId, exerciseName or setData in request body.",
+            }),
         };
     }
 
     try {
-        const currentSession = await getSession(body.userId, body.sessionId);
+        const currentSession = await getSessionByIds(
+            body.userId,
+            body.sessionId,
+        );
 
         if (!currentSession) {
             return {
                 statusCode: 404,
                 body: JSON.stringify({
-                    message: 'Session not found.'
-                })
+                    message: "Session not found.",
+                }),
             };
         }
 
@@ -49,17 +61,16 @@ export const handler = async (event) => {
         return {
             statusCode: 200,
             body: JSON.stringify({
-                message: 'Set added successfully.'
-            })
+                message: "Set added successfully.",
+            }),
         };
-
     } catch (e) {
-        console.error('Error adding set:', e);
+        console.error("Error adding set:", e);
         return {
             statusCode: 500,
             body: JSON.stringify({
-                message: 'Error adding set.'
-            })
+                message: "Error adding set.",
+            }),
         };
     }
 };

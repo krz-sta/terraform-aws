@@ -1,9 +1,9 @@
-import { deleteSession } from "../services/dbService.js";
+import { deleteSession } from "../services/active-session.service.js";
 
 export const handler = async (event) => {
-    console.log('Logging event:');
+    console.log("Logging event:");
     console.log(event);
-    
+
     const userId = event?.queryStringParameters?.userId;
     const sessionId = event?.queryStringParameters?.sessionId;
 
@@ -11,8 +11,8 @@ export const handler = async (event) => {
         return {
             statusCode: 400,
             body: JSON.stringify({
-                message: 'Missing userId or sessionId in request parameters.'
-            })
+                message: "Missing userId or sessionId in request parameters.",
+            }),
         };
     }
 
@@ -22,26 +22,25 @@ export const handler = async (event) => {
         return {
             statusCode: 200,
             body: JSON.stringify({
-                message: 'Session cancelled successfully.'
-            })
+                message: "Session cancelled successfully.",
+            }),
         };
-
     } catch (e) {
-        console.error('Error deleting session:', e);
-        if (e.name === 'ConditionalCheckFailedException') {
+        console.error("Error deleting session:", e);
+        if (e.name === "ConditionalCheckFailedException") {
             return {
                 statusCode: 404,
                 body: JSON.stringify({
-                    message: 'Session not found.'
-                })
+                    message: "Session not found.",
+                }),
             };
         }
 
         return {
             statusCode: 500,
             body: JSON.stringify({
-                message: 'Error deleting session.',
-            })
-        }
+                message: "Error deleting session.",
+            }),
+        };
     }
 };

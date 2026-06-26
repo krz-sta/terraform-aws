@@ -1,4 +1,7 @@
-import { getSession, updateSession } from "../services/dbService.js";
+import {
+    getSessionByIds,
+    updateSession,
+} from "../services/active-session.service.js";
 
 export const handler = async (event) => {
     let body;
@@ -31,7 +34,10 @@ export const handler = async (event) => {
     }
 
     try {
-        const currentSession = await getSession(body.userId, body.sessionId);
+        const currentSession = await getSessionByIds(
+            body.userId,
+            body.sessionId,
+        );
 
         if (!currentSession) {
             return {

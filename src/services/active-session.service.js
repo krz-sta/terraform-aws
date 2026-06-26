@@ -25,6 +25,22 @@ export const getSessionByIds = async (userId, sessionId) => {
     return session.Item || null;
 };
 
+export async function updateSession(userId, sessionId, updatedExercises) {
+    await docClient.send(
+        new UpdateCommand({
+            TableName: ACTIVE_SESSIONS_TABLE_NAME,
+            Key: {
+                UserId: userId,
+                SessionId: sessionId,
+            },
+            UpdateExpression: "SET Exercises = :updatedData",
+            ExpressionAttributeValues: {
+                ":updatedData": updatedExercises,
+            },
+        }),
+    );
+}
+
 export async function querySession(userId) {
     const existing = await docClient.send(
         new QueryCommand({
@@ -93,22 +109,6 @@ export async function saveSession(sessionData) {
                     },
                 },
             ],
-        }),
-    );
-}
-
-export async function updateSession(userId, sessionId, updatedExercises) {
-    await docClient.send(
-        new UpdateCommand({
-            TableName: "DBActiveSessions",
-            Key: {
-                UserId: userId,
-                SessionId: sessionId,
-            },
-            UpdateExpression: "SET Exercises = :updatedData",
-            ExpressionAttributeValues: {
-                ":updatedData": updatedExercises,
-            },
         }),
     );
 }
