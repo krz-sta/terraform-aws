@@ -1,23 +1,24 @@
-import { deleteSession } from "../services/active-session.service.js";
+import { validateRequest } from "../helpers/validation.helper.js";
+import { cancelSessionLogic } from "./cancel-session.helper.js";
 
 export const handler = async (event) => {
-    console.log("Logging event:");
-    console.log(event);
+    const params = event?.queryStringParameters || {};
 
-    const userId = event?.queryStringParameters?.userId;
-    const sessionId = event?.queryStringParameters?.sessionId;
-
-    if (!userId || !sessionId) {
+    const validationErrors = await validateRequest(getSessionSchema, params);
+    if (validationErrors) {
         return {
             statusCode: 400,
             body: JSON.stringify({
-                message: "Missing userId or sessionId in request parameters.",
+                message: "Invalid query parameters.",
+                validationErrors,
             }),
         };
     }
 
+    const { userId, sessionId } = params;
+
     try {
-        await deleteSession(userId, sessionId);
+        await cancelSessionLogic(userId, sessionId);
 
         return {
             statusCode: 200,
@@ -26,8 +27,7 @@ export const handler = async (event) => {
             }),
         };
     } catch (e) {
-        console.error("Error deleting session:", e);
-        if (e.name === "ConditionalCheckFailedException") {
+        if (e.message === "ConditionalCheckFailedException") {
             return {
                 statusCode: 404,
                 body: JSON.stringify({
@@ -36,10 +36,11 @@ export const handler = async (event) => {
             };
         }
 
+        console.error("Unhandled error:", e);
         return {
             statusCode: 500,
             body: JSON.stringify({
-                message: "Error deleting session.",
+                message: "Unhandled server error.",
             }),
         };
     }

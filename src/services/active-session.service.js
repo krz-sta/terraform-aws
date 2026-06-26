@@ -74,19 +74,6 @@ export async function putSession(userId) {
     return sessionId;
 }
 
-export async function deleteSession(userId, sessionId) {
-    await docClient.send(
-        new DeleteCommand({
-            TableName: "DBActiveSessions",
-            Key: {
-                UserId: userId,
-                SessionId: sessionId,
-            },
-            ConditionExpression: "attribute_exists(SessionId)",
-        }),
-    );
-}
-
 export async function saveSession(sessionData) {
     await docClient.send(
         new TransactWriteCommand({
