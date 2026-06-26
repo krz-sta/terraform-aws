@@ -9,6 +9,22 @@ import {
     UpdateCommand,
 } from "@aws-sdk/lib-dynamodb";
 
+const ACTIVE_SESSIONS_TABLE_NAME = process.env.ACTIVE_SESSIONS_TABLE_NAME;
+
+export const getSessionByIds = async (userId, sessionId) => {
+    const session = await docClient.send(
+        new GetCommand({
+            TableName: ACTIVE_SESSIONS_TABLE_NAME,
+            Key: {
+                UserId: userId,
+                SessionId: sessionId,
+            },
+        }),
+    );
+
+    return session.Item || null;
+};
+
 export async function querySession(userId) {
     const existing = await docClient.send(
         new QueryCommand({
@@ -40,20 +56,6 @@ export async function putSession(userId) {
     );
 
     return sessionId;
-}
-
-export async function getSession(userId, sessionId) {
-    const result = await docClient.send(
-        new GetCommand({
-            TableName: "DBActiveSessions",
-            Key: {
-                UserId: userId,
-                SessionId: sessionId,
-            },
-        }),
-    );
-
-    return result.Item || null;
 }
 
 export async function deleteSession(userId, sessionId) {

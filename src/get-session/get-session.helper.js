@@ -1,4 +1,4 @@
-import { getSessionByIds } from "./get-session.service.js";
+import { getSessionByIds } from "../services/active-session.service.js";
 
 export const getSessionLogic = async (userId, sessionId) => {
     const session = await getSessionByIds(userId, sessionId);
