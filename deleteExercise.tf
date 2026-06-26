@@ -55,7 +55,7 @@ resource "aws_iam_role_policy_attachment" "DeleteExerciseLambdaPolicyAttachment"
 resource "aws_lambda_function" "DeleteExerciseLambda" {
   function_name = "delete-exercise-lambda"
   runtime       = "nodejs24.x"
-  handler       = "index.handler"
+  handler       = "handler.handler"
   filename      = data.archive_file.DeleteExerciseLambdaZip.output_path
   code_sha256   = data.archive_file.DeleteExerciseLambdaZip.output_base64sha256
   role          = aws_iam_role.DeleteExerciseLambdaRole.arn

@@ -52,7 +52,7 @@ export const handler = async (event) => {
             };
         }
 
-        console.error("Unhandled error:", e.message);
+        console.error("Unhandled error:", e);
         return {
             statusCode: 500,
             body: JSON.stringify({

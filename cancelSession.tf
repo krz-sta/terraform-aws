@@ -54,7 +54,7 @@ resource "aws_iam_role_policy_attachment" "CancelSessionLambdaPolicyAttachment" 
 resource "aws_lambda_function" "CancelSessionLambda" {
   function_name = "cancel-session-lambda"
   runtime       = "nodejs24.x"
-  handler       = "index.handler"
+  handler       = "handler.handler"
   filename      = data.archive_file.CancelSessionLambdaZip.output_path
   code_sha256   = data.archive_file.CancelSessionLambdaZip.output_base64sha256
   role          = aws_iam_role.CancelSessionLambdaRole.arn

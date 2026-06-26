@@ -1,9 +1,9 @@
 import {
-    getSessionByIds,
     updateSession,
+    getSessionByIds,
 } from "../services/active-session.service.js";
 
-export const addExerciseLogic = async (userId, sessionId, exerciseName) => {
+export const addSetLogic = async (userId, sessionId, exerciseName, setData) => {
     const session = await getSessionByIds(userId, sessionId);
 
     if (!session) {
@@ -12,10 +12,11 @@ export const addExerciseLogic = async (userId, sessionId, exerciseName) => {
 
     let updatedExercises = session.Exercises || {};
 
-    if (updatedExercises[exerciseName]) {
-        throw new Error("EXERCISE_ALREADY_EXISTS");
+    if (!updatedExercises[exerciseName]) {
+        updatedExercises[exerciseName] = { Sets: [] };
     }
 
-    updatedExercises[exerciseName] = { Sets: [] };
+    updatedExercises[exerciseName].Sets.push(setData);
+
     await updateSession(userId, sessionId, updatedExercises);
 };

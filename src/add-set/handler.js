@@ -1,34 +1,47 @@
+import { addSetSchema } from "./add-set.schema.js";
 import { validateRequest } from "../helpers/validation.helper.js";
-import { cancelSessionLogic } from "./cancel-session.helper.js";
-import { cancelSessionSchema } from "./cancel-session.schema.js";
+import { addSetLogic } from "./add-set.helper.js";
+import { parseBody } from "../helpers/parse-body.helper.js";
 
 export const handler = async (event) => {
-    const params = event?.queryStringParameters || {};
+    const body = parseBody(event.body);
+    if (!body) {
+        return {
+            statusCode: 400,
+            body: JSON.stringify({
+                message: "Invalid JSON in request body.",
+            }),
+        };
+    }
 
-    const validationErrors = await validateRequest(cancelSessionSchema, params);
+    const validationErrors = await validateRequest(addSetSchema, body);
+
     if (validationErrors) {
         return {
             statusCode: 400,
             body: JSON.stringify({
-                message: "Invalid query parameters.",
+                message: "Schema validation failed.",
                 validationErrors,
             }),
         };
     }
 
-    const { userId, sessionId } = params;
-
     try {
-        await cancelSessionLogic(userId, sessionId);
+        await addSetLogic(
+            body.userId,
+            body.sessionId,
+            body.exerciseName,
+            body.setData,
+        );
 
         return {
             statusCode: 200,
             body: JSON.stringify({
-                message: "Session cancelled successfully.",
+                message: "Set added successfully.",
             }),
         };
     } catch (e) {
-        if (e.name === "ConditionalCheckFailedException") {
+        if (e.message === "SESSION_NOT_FOUND") {
             return {
                 statusCode: 404,
                 body: JSON.stringify({

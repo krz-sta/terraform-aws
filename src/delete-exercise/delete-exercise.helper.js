@@ -3,8 +3,8 @@ import {
     updateSession,
 } from "../services/active-session.service.js";
 
-export const deleteExerciseLogic = async (event) => {
-    const session = await getSessionByIds(event.userId, event.sessionId);
+export const deleteExerciseLogic = async (userId, sessionId, exerciseName) => {
+    const session = await getSessionByIds(userId, sessionId);
 
     if (!session) {
         throw new Error("SESSION_NOT_FOUND");
@@ -12,11 +12,11 @@ export const deleteExerciseLogic = async (event) => {
 
     let updatedExercises = session.Exercises || {};
 
-    if (!updatedExercises[event.exerciseName]) {
+    if (!updatedExercises[exerciseName]) {
         throw new Error("EXERCISE_NOT_FOUND");
     }
 
-    delete updatedExercises[event.exerciseName];
+    delete updatedExercises[exerciseName];
 
-    await updateSession(event.userId, event.sessionId, updatedExercises);
+    await updateSession(userId, sessionId, updatedExercises);
 };
