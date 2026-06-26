@@ -1,5 +1,5 @@
 import crypto from "crypto";
-import { docClient } from "../helpers/dbClient.js";
+import { docClient } from "../helpers/db-client.helper.js";
 import {
     GetCommand,
     DeleteCommand,

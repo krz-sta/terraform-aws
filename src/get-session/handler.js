@@ -1,4 +1,4 @@
-import { validateRequest } from "../helpers/validator.js";
+import { validateRequest } from "../helpers/validation.helper.js";
 import { getSessionLogic } from "./get-session.helper.js";
 import { getSessionSchema } from "./get-session.schema.js";
 

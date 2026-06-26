@@ -1,4 +1,4 @@
-import { parseBody } from "../helpers/parseBody.js";
+import { parseBody } from "../helpers/parse-body.helper.js";
 import {
     getSessionByIds,
     updateSession,

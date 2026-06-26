@@ -1,7 +1,7 @@
-import { parseBody } from "../helpers/parseBody.js";
+import { parseBody } from "../helpers/parse-body.helper.js";
 import { startSessionLogic } from "./start-session.helper.js";
 import { startSessionSchema } from "./start-session.schema.js";
-import { validateRequest } from "../helpers/validator.js";
+import { validateRequest } from "../helpers/validation.helper.js";
 
 export const handler = async (event) => {
     const body = parseBody(event.body);

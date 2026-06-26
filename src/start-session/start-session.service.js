@@ -1,4 +1,4 @@
-import { docClient } from "../helpers/dbClient";
+import { docClient } from "../helpers/db-client.helper";
 import { QueryCommand, PutCommand } from "@aws-sdk/lib-dynamodb";
 
 const ACTIVE_SESSIONS_TABLE_NAME = process.env.ACTIVE_SESSIONS_DB_TABLE_NAME;
