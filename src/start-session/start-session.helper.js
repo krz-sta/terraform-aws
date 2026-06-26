@@ -1,5 +1,5 @@
 import crypto from "crypto";
-import { querySessionByUserId, startSession } from "./start-session.service";
+import { querySessionByUserId, startSession } from "./start-session.service.js";
 
 export const startSessionLogic = async (userId) => {
     const existing = await querySessionByUserId(userId);

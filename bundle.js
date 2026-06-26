@@ -5,7 +5,7 @@ async function runBuild() {
         entryPoints: [
             "src/get-status/handler.js",
             "src/start-session/handler.js",
-            "src/get-session/index.js",
+            "src/get-session/handler.js",
             "src/cancel-session/index.js",
             "src/save-session/index.js",
             "src/add-exercise/index.js",
