@@ -1,71 +1,38 @@
 resource "aws_api_gateway_rest_api" "WorkoutStatsAPI" {
-    name = "WorkoutStatsAPI"
+  name = "WorkoutStatsAPI"
 }
 
 resource "aws_api_gateway_resource" "ActiveSessionResource" {
-    rest_api_id = aws_api_gateway_rest_api.WorkoutStatsAPI.id
-    parent_id = aws_api_gateway_rest_api.WorkoutStatsAPI.root_resource_id
-    path_part = "active-session"
+  rest_api_id = aws_api_gateway_rest_api.WorkoutStatsAPI.id
+  parent_id   = aws_api_gateway_rest_api.WorkoutStatsAPI.root_resource_id
+  path_part   = "active-session"
 }
 
 resource "aws_api_gateway_deployment" "WorkoutStatsAPIDeployment" {
-    rest_api_id = aws_api_gateway_rest_api.WorkoutStatsAPI.id
+  rest_api_id = aws_api_gateway_rest_api.WorkoutStatsAPI.id
 
-    depends_on = [
-        aws_api_gateway_integration.GetStatusStatusIntegration,
-        aws_api_gateway_integration.StartSessionIntegration,
-        aws_api_gateway_integration.GetSessionIntegration,
-        aws_api_gateway_integration.CancelSessionIntegration,
-        aws_api_gateway_integration.SaveSessionIntegration,
-        aws_api_gateway_integration.AddExerciseIntegration,
-        aws_api_gateway_integration.DeleteExerciseIntegration,
-        aws_api_gateway_integration.AddSetIntegration,
-        aws_api_gateway_integration.DeleteSetIntegration,
-        aws_api_gateway_integration.UpdateSetIntegration
-    ]
+  triggers = {
+    redeployment = sha1(jsonencode([
+      module.GetStatus.trigger_hash,
+      module.StartSession.trigger_hash,
+      module.GetSession.trigger_hash,
+      module.CancelSession.trigger_hash,
+      module.SaveSession.trigger_hash,
+      module.AddExercise.trigger_hash,
+      module.DeleteExercise.trigger_hash,
+      module.AddSet.trigger_hash,
+      module.DeleteSet.trigger_hash,
+      module.UpdateSet.trigger_hash
+    ]))
+  }
 
-    triggers = {
-      redeployment = sha1(jsonencode([
-        aws_api_gateway_resource.GetStatusResource.id,
-        aws_api_gateway_method.GetStatusMethod.id,
-        aws_api_gateway_integration.GetStatusStatusIntegration,
-        aws_api_gateway_resource.StartSessionResource.id,
-        aws_api_gateway_method.StartSessionMethod.id,
-        aws_api_gateway_integration.StartSessionIntegration,
-        aws_api_gateway_resource.GetSessionResource.id,
-        aws_api_gateway_method.GetSessionMethod.id,
-        aws_api_gateway_integration.GetSessionIntegration,
-        aws_api_gateway_resource.CancelSessionResource.id,
-        aws_api_gateway_method.CancelSessionMethod.id,
-        aws_api_gateway_integration.CancelSessionIntegration,
-        aws_api_gateway_resource.SaveSessionResource.id,
-        aws_api_gateway_method.SaveSessionMethod.id,
-        aws_api_gateway_integration.SaveSessionIntegration,
-        aws_api_gateway_resource.AddExerciseResource.id,
-        aws_api_gateway_method.AddExerciseMethod.id,
-        aws_api_gateway_integration.AddExerciseIntegration.id,
-        aws_api_gateway_resource.DeleteExerciseResource.id,
-        aws_api_gateway_method.DeleteExerciseMethod.id,
-        aws_api_gateway_integration.DeleteExerciseIntegration.id,
-        aws_api_gateway_resource.AddSetResource.id,
-        aws_api_gateway_method.AddSetMethod.id,
-        aws_api_gateway_integration.AddSetIntegration.id,
-        aws_api_gateway_resource.DeleteSetResource.id,
-        aws_api_gateway_method.DeleteSetMethod.id,
-        aws_api_gateway_integration.DeleteSetIntegration.id,
-        aws_api_gateway_resource.UpdateSetResource.id,
-        aws_api_gateway_method.UpdateSetMethod.id,
-        aws_api_gateway_integration.UpdateSetIntegration.id
-      ]))
-    }
-
-    lifecycle {
-      create_before_destroy = true
-    }
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 resource "aws_api_gateway_stage" "WorkoutStatsAPIStage" {
-    stage_name = "prod"
-    rest_api_id = aws_api_gateway_rest_api.WorkoutStatsAPI.id
-    deployment_id = aws_api_gateway_deployment.WorkoutStatsAPIDeployment.id
+  stage_name    = "prod"
+  rest_api_id   = aws_api_gateway_rest_api.WorkoutStatsAPI.id
+  deployment_id = aws_api_gateway_deployment.WorkoutStatsAPIDeployment.id
 }
