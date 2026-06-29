@@ -1,6 +1,18 @@
 import esbuild from "esbuild";
+import fs from "fs";
+import { execSync } from "child_process";
 
 async function runBuild() {
+    console.log("Copying node_modules...");
+    const layerDirectory = "layers/shared-libs-layer/nodejs";
+    fs.mkdirSync(layerDirectory, { recursive: true });
+    fs.cpSync("package.json", `${layerDirectory}/package.json`);
+    execSync("npm install --omit=dev", {
+        cwd: layerDirectory,
+        stdio: "inherit",
+    });
+
+    console.log("Building Lambda functions...");
     await esbuild.build({
         entryPoints: [
             "src/get-status/handler.js",
