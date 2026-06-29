@@ -1,7 +1,4 @@
-import {
-    updateSession,
-    getSessionByIds,
-} from "../services/active-session.service.js";
+import { update, get } from "../services/db-client.service.js";
 
 export const updateSetLogic = async (
     userId,
@@ -10,7 +7,13 @@ export const updateSetLogic = async (
     setIndex,
     setData,
 ) => {
-    const session = await getSessionByIds(userId, sessionId);
+    const session = await get(
+        "UserId",
+        userId,
+        "SessionId",
+        sessionId,
+        "DBActiveSessions",
+    );
 
     if (!session) {
         throw new Error("SESSION_NOT_FOUND");
@@ -27,5 +30,13 @@ export const updateSetLogic = async (
 
     updatedExercises[exerciseName].Sets[setIndex] = setData;
 
-    await updateSession(userId, sessionId, updatedExercises);
+    await update(
+        "UserId",
+        userId,
+        "SessionId",
+        sessionId,
+        "Exercises",
+        updatedExercises,
+        "DBActiveSessions",
+    );
 };

@@ -1,10 +1,13 @@
-import {
-    getSessionByIds,
-    updateSession,
-} from "../services/active-session.service.js";
+import { get, update } from "../services/db-client.service.js";
 
 export const addExerciseLogic = async (userId, sessionId, exerciseName) => {
-    const session = await getSessionByIds(userId, sessionId);
+    const session = await get(
+        "UserId",
+        userId,
+        "SessionId",
+        sessionId,
+        "DBActiveSessions",
+    );
 
     if (!session) {
         throw new Error("SESSION_NOT_FOUND");
@@ -17,5 +20,13 @@ export const addExerciseLogic = async (userId, sessionId, exerciseName) => {
     }
 
     updatedExercises[exerciseName] = { Sets: [] };
-    await updateSession(userId, sessionId, updatedExercises);
+    await update(
+        "UserId",
+        userId,
+        "SessionId",
+        sessionId,
+        "Exercises",
+        updatedExercises,
+        "DBActiveSessions",
+    );
 };

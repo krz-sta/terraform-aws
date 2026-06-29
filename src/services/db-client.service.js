@@ -3,10 +3,9 @@ import {
     DynamoDBDocumentClient,
     GetCommand,
     UpdateCommand,
+    DeleteCommand,
 } from "@aws-sdk/lib-dynamodb";
-
-const client = new DynamoDBClient({});
-export const docClient = DynamoDBDocumentClient.from(client);
+import { docClient } from "../helpers/db-client.helper.js";
 
 export const get = async (
     partitionKeyName,
@@ -40,6 +39,9 @@ export const update = async (
     updatedData,
     tableName,
 ) => {
+    console.log(
+        `Updating ${attribute} in item: PK: ${partitionKey}, SK: ${sortKey} in ${tableName} with: ${updatedData}`,
+    );
     await docClient.send(
         new UpdateCommand({
             TableName: tableName,
@@ -58,10 +60,23 @@ export const update = async (
     );
 };
 
-await get(
-    "UserId",
-    "krzysztof123",
-    "SessionId",
-    "4f010870-8117-432d-9ff4-ea2022743178",
-    "DBActiveSessions",
-);
+export const deleteCmd = async (
+    partitionKeyName,
+    partitionKey,
+    sortKeyName,
+    sortKey,
+    tableName,
+) => {
+    console.log(
+        `Deleting item: PK: ${partitionKey}, SK: ${sortKey} from ${tableName}`,
+    );
+    await docClient.send(
+        new DeleteCommand({
+            TableName: tableName,
+            Key: {
+                [partitionKeyName]: partitionKey,
+                [sortKeyName]: sortKey,
+            },
+        }),
+    );
+};
