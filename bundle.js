@@ -9,7 +9,6 @@ async function runBuild() {
     fs.cpSync("package.json", `${layerDirectory}/package.json`);
     execSync("npm install --omit=dev", {
         cwd: layerDirectory,
-        stdio: "inherit",
     });
 
     console.log("Building Lambda functions...");
