@@ -1,7 +1,7 @@
 import { docClient } from "../helpers/db-client.helper";
 import { QueryCommand, PutCommand } from "@aws-sdk/lib-dynamodb";
 
-const ACTIVE_SESSIONS_TABLE_NAME = process.env.ACTIVE_SESSIONS_DB_TABLE_NAME;
+const ACTIVE_SESSIONS_TABLE_NAME = process.env.ACTIVE_SESSIONS_TABLE_NAME;
 
 export const querySessionByUserId = async (userId) => {
     const existing = await docClient.send(
