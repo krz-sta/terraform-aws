@@ -1,9 +1,4 @@
-variable "ActiveSessionsDBTableName" {
+variable "region" {
   type    = string
-  default = "DBActiveSessions"
-}
-
-variable "SessionHistoryDBTableName" {
-  type    = string
-  default = "DBSessionHistory"
+  default = "eu-central-1"
 }

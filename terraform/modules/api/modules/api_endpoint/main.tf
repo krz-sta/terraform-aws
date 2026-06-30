@@ -74,7 +74,7 @@ resource "aws_api_gateway_method" "method" {
   authorization = "NONE"
 }
 
-resource "aws_api_gateway_integration" "lambda_integration" {
+resource "aws_api_gateway_integration" "integration" {
   rest_api_id             = var.api_id
   resource_id             = aws_api_gateway_resource.resource.id
   http_method             = var.http_method

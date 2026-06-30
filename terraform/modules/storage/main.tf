@@ -1,9 +1,9 @@
-resource "aws_s3_bucket" "S3WorkoutsArchive" {
+resource "aws_s3_bucket" "s3_workouts_archive" {
   bucket_prefix = "s3-workouts-archive"
 }
 
-resource "aws_dynamodb_table" "DBActiveSessions" {
-  name         = "DBActiveSessions"
+resource "aws_dynamodb_table" "ddb_active_sessions" {
+  name         = "db-active-sessions"
   billing_mode = "PAY_PER_REQUEST"
   hash_key     = "UserId"
   range_key    = "SessionId"
@@ -24,8 +24,8 @@ resource "aws_dynamodb_table" "DBActiveSessions" {
   }
 }
 
-resource "aws_dynamodb_table" "DBSessionHistory" {
-  name         = "DBSessionHistory"
+resource "aws_dynamodb_table" "ddb_session_history" {
+  name         = "db-session-history"
   billing_mode = "PAY_PER_REQUEST"
   hash_key     = "UserId"
   range_key    = "SessionId"
@@ -49,8 +49,8 @@ resource "aws_dynamodb_table" "DBSessionHistory" {
   stream_view_type = "NEW_IMAGE"
 }
 
-resource "aws_dynamodb_table" "DBUserStats" {
-  name         = "DBUserStats"
+resource "aws_dynamodb_table" "ddb_user_stats" {
+  name         = "db-user-stats"
   billing_mode = "PAY_PER_REQUEST"
   hash_key     = "UserId"
   range_key    = "SK"
