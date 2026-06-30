@@ -24,6 +24,8 @@ async function runBuild() {
             "src/add-set/handler.js",
             "src/delete-set/handler.js",
             "src/update-set/handler.js",
+            "src/update-stats/handler.js",
+            "src/archive-workout/handler.js",
         ],
         bundle: true,
         minify: true,

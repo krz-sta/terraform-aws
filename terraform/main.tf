@@ -28,3 +28,13 @@ module "api" {
   ddb_user_stats_table_name      = module.storage.ddb_user_stats_table_name
   ddb_user_stats_table_arn       = module.storage.ddb_user_stats_table_arn
 }
+
+module "workers" {
+  source = "./modules/workers"
+
+  ddb_session_history_stream_arn  = module.storage.ddb_session_history_stream_arn
+  s3_workouts_archive_bucket_name = module.storage.s3_workouts_archive_bucket_name
+  s3_workouts_archive_bucket_arn  = module.storage.s3_workouts_archive_bucket_arn
+  ddb_user_stats_table_name       = module.storage.ddb_user_stats_table_name
+  ddb_user_stats_table_arn        = module.storage.ddb_user_stats_table_arn
+}
