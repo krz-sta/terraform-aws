@@ -1,12 +1,14 @@
 import { get, update } from "../services/db-client.service.js";
 
+const ACTIVE_SESSIONS_TABLE_NAME = process.env.ACTIVE_SESSIONS_TABLE_NAME;
+
 export const deleteExerciseLogic = async (userId, sessionId, exerciseName) => {
     const session = await get(
         "UserId",
         userId,
         "SessionId",
         sessionId,
-        "DBActiveSessions",
+        ACTIVE_SESSIONS_TABLE_NAME,
     );
 
     if (!session) {
@@ -28,6 +30,6 @@ export const deleteExerciseLogic = async (userId, sessionId, exerciseName) => {
         sessionId,
         "Exercises",
         updatedExercises,
-        "DBActiveSessions",
+        ACTIVE_SESSIONS_TABLE_NAME,
     );
 };

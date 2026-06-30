@@ -1,5 +1,7 @@
 import { update, get } from "../services/db-client.service.js";
 
+const ACTIVE_SESSIONS_TABLE_NAME = process.env.ACTIVE_SESSIONS_TABLE_NAME;
+
 export const updateSetLogic = async (
     userId,
     sessionId,
@@ -12,7 +14,7 @@ export const updateSetLogic = async (
         userId,
         "SessionId",
         sessionId,
-        "DBActiveSessions",
+        ACTIVE_SESSIONS_TABLE_NAME,
     );
 
     if (!session) {
@@ -37,6 +39,6 @@ export const updateSetLogic = async (
         sessionId,
         "Exercises",
         updatedExercises,
-        "DBActiveSessions",
+        ACTIVE_SESSIONS_TABLE_NAME,
     );
 };

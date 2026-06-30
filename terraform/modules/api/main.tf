@@ -8,49 +8,37 @@ resource "aws_api_gateway_resource" "resource_active_session" {
   path_part   = "active-session"
 }
 
+resource "aws_api_gateway_resource" "resource_exercise" {
+  rest_api_id = aws_api_gateway_rest_api.workout_stats_api.id
+  parent_id   = aws_api_gateway_resource.resource_active_session.id
+  path_part   = "exercise"
+}
+
+resource "aws_api_gateway_resource" "resource_set" {
+  rest_api_id = aws_api_gateway_rest_api.workout_stats_api.id
+  parent_id   = aws_api_gateway_resource.resource_active_session.id
+  path_part   = "set"
+}
+
+resource "aws_api_gateway_resource" "resource_save" {
+  rest_api_id = aws_api_gateway_rest_api.workout_stats_api.id
+  parent_id   = aws_api_gateway_resource.resource_active_session.id
+  path_part   = "save"
+}
+
 locals {
-  patch_session_endpoints = [
-    "add-exercise",
-    "delete-exercise",
-    "add-set",
-    "delete-set",
-    "update-set"
-  ]
-
-  patch_defaults = {
-    parent_id = aws_api_gateway_resource.resource_active_session.id
-    method    = "PATCH"
-    layers    = [var.shared_libs_layer_arn]
-    env = {
-      ACTIVE_SESSIONS_TABLE_NAME = var.ddb_active_sessions_table_name
-    }
-    policy = jsonencode({
-      Version = "2012-10-17"
-      Statement = [
-        {
-          Effect = "Allow"
-          Action = [
-            "dynamodb:GetItem",
-            "dynamodb:UpdateItem"
-          ]
-          Resource = var.ddb_active_sessions_table_arn
-        }
-      ]
-    })
-  }
-
-  explicit_endpoints = {
+  api_endpoints = {
     "get-status" = {
-      parent_id = aws_api_gateway_rest_api.workout_stats_api.root_resource_id
-      method    = "GET"
-      layers    = []
-      env       = {}
-      policy    = ""
+      resource_id = aws_api_gateway_rest_api.workout_stats_api.root_resource_id
+      method      = "GET"
+      layers      = []
+      env         = {}
+      policy      = ""
     }
     "start-session" = {
-      parent_id = aws_api_gateway_rest_api.workout_stats_api.root_resource_id
-      method    = "POST"
-      layers    = [var.shared_libs_layer_arn]
+      resource_id = aws_api_gateway_resource.resource_active_session.id
+      method      = "POST"
+      layers      = [var.shared_libs_layer_arn]
       env = {
         ACTIVE_SESSIONS_TABLE_NAME = var.ddb_active_sessions_table_name
       }
@@ -69,9 +57,9 @@ locals {
       })
     }
     "get-session" = {
-      parent_id = aws_api_gateway_rest_api.workout_stats_api.root_resource_id
-      method    = "GET"
-      layers    = [var.shared_libs_layer_arn]
+      resource_id = aws_api_gateway_resource.resource_active_session.id
+      method      = "GET"
+      layers      = [var.shared_libs_layer_arn]
       env = {
         ACTIVE_SESSIONS_TABLE_NAME = var.ddb_active_sessions_table_name
       }
@@ -89,9 +77,9 @@ locals {
       })
     }
     "cancel-session" = {
-      parent_id = aws_api_gateway_rest_api.workout_stats_api.root_resource_id
-      method    = "DELETE"
-      layers    = [var.shared_libs_layer_arn]
+      resource_id = aws_api_gateway_resource.resource_active_session.id
+      method      = "DELETE"
+      layers      = [var.shared_libs_layer_arn]
       env = {
         ACTIVE_SESSIONS_TABLE_NAME = var.ddb_active_sessions_table_name
       }
@@ -109,9 +97,9 @@ locals {
       })
     }
     "save-session" = {
-      parent_id = aws_api_gateway_rest_api.workout_stats_api.root_resource_id
-      method    = "POST"
-      layers    = [var.shared_libs_layer_arn]
+      resource_id = aws_api_gateway_resource.resource_save.id
+      method      = "POST"
+      layers      = [var.shared_libs_layer_arn]
       env = {
         ACTIVE_SESSIONS_TABLE_NAME = var.ddb_active_sessions_table_name
         SESSION_HISTORY_TABLE_NAME = var.ddb_session_history_table_name
@@ -122,13 +110,15 @@ locals {
           {
             Effect = "Allow"
             Action = [
-              "dynamodb:PutItem"
+              "dynamodb:PutItem",
+              "dynamodb:UpdateItem"
             ]
             Resource = var.ddb_session_history_table_arn
           },
           {
             Effect = "Allow"
             Action = [
+              "dynamodb:GetItem",
               "dynamodb:DeleteItem"
             ]
             Resource = var.ddb_active_sessions_table_arn
@@ -136,12 +126,112 @@ locals {
         ]
       })
     }
+    "add-exercise" = {
+      resource_id = aws_api_gateway_resource.resource_exercise.id
+      method      = "POST"
+      layers      = [var.shared_libs_layer_arn]
+      env = {
+        ACTIVE_SESSIONS_TABLE_NAME = var.ddb_active_sessions_table_name
+      }
+      policy = jsonencode({
+        Version = "2012-10-17"
+        Statement = [
+          {
+            Effect = "Allow"
+            Action = [
+              "dynamodb:GetItem",
+              "dynamodb:UpdateItem"
+            ]
+            Resource = var.ddb_active_sessions_table_arn
+          }
+        ]
+      })
+    }
+    "delete-exercise" = {
+      resource_id = aws_api_gateway_resource.resource_exercise.id
+      method      = "DELETE"
+      layers      = [var.shared_libs_layer_arn]
+      env = {
+        ACTIVE_SESSIONS_TABLE_NAME = var.ddb_active_sessions_table_name
+      }
+      policy = jsonencode({
+        Version = "2012-10-17"
+        Statement = [
+          {
+            Effect = "Allow"
+            Action = [
+              "dynamodb:GetItem",
+              "dynamodb:UpdateItem"
+            ]
+            Resource = var.ddb_active_sessions_table_arn
+          }
+        ]
+      })
+    }
+    "add-set" = {
+      resource_id = aws_api_gateway_resource.resource_set.id
+      method      = "POST"
+      layers      = [var.shared_libs_layer_arn]
+      env = {
+        ACTIVE_SESSIONS_TABLE_NAME = var.ddb_active_sessions_table_name
+      }
+      policy = jsonencode({
+        Version = "2012-10-17"
+        Statement = [
+          {
+            Effect = "Allow"
+            Action = [
+              "dynamodb:GetItem",
+              "dynamodb:UpdateItem"
+            ]
+            Resource = var.ddb_active_sessions_table_arn
+          }
+        ]
+      })
+    }
+    "update-set" = {
+      resource_id = aws_api_gateway_resource.resource_set.id
+      method      = "PUT"
+      layers      = [var.shared_libs_layer_arn]
+      env = {
+        ACTIVE_SESSIONS_TABLE_NAME = var.ddb_active_sessions_table_name
+      }
+      policy = jsonencode({
+        Version = "2012-10-17"
+        Statement = [
+          {
+            Effect = "Allow"
+            Action = [
+              "dynamodb:GetItem",
+              "dynamodb:UpdateItem"
+            ]
+            Resource = var.ddb_active_sessions_table_arn
+          }
+        ]
+      })
+    }
+    "delete-set" = {
+      resource_id = aws_api_gateway_resource.resource_set.id
+      method      = "DELETE"
+      layers      = [var.shared_libs_layer_arn]
+      env = {
+        ACTIVE_SESSIONS_TABLE_NAME = var.ddb_active_sessions_table_name
+      }
+      policy = jsonencode({
+        Version = "2012-10-17"
+        Statement = [
+          {
+            Effect = "Allow"
+            Action = [
+              "dynamodb:GetItem",
+              "dynamodb:UpdateItem"
+            ]
+            Resource = var.ddb_active_sessions_table_arn
+          }
+        ]
+      })
+    }
   }
-
-  api_endpoints = merge(
-    local.explicit_endpoints,
-    { for endpoint in local.patch_session_endpoints : endpoint => local.patch_defaults }
-  )
 }
 
 module "api_endpoints" {
@@ -151,7 +241,7 @@ module "api_endpoints" {
 
   name               = each.key
   api_id             = aws_api_gateway_rest_api.workout_stats_api.id
-  api_parent_id      = each.value.parent_id
+  resource_id        = each.value.resource_id
   http_method        = each.value.method
   layers             = each.value.layers
   env_variables      = each.value.env
@@ -168,6 +258,8 @@ resource "aws_api_gateway_deployment" "workout_stats_api_deployment" {
   lifecycle {
     create_before_destroy = true
   }
+
+  depends_on = [module.api_endpoints]
 }
 
 resource "aws_api_gateway_stage" "workout_stats_api_stage" {

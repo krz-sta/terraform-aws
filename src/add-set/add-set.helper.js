@@ -1,12 +1,14 @@
 import { update, get } from "../services/db-client.service.js";
 
+const ACTIVE_SESSIONS_TABLE_NAME = process.env.ACTIVE_SESSIONS_TABLE_NAME;
+
 export const addSetLogic = async (userId, sessionId, exerciseName, setData) => {
     const session = await get(
         "UserId",
         userId,
         "SessionId",
         sessionId,
-        "DBActiveSessions",
+        ACTIVE_SESSIONS_TABLE_NAME,
     );
 
     if (!session) {
@@ -28,6 +30,6 @@ export const addSetLogic = async (userId, sessionId, exerciseName, setData) => {
         sessionId,
         "Exercises",
         updatedExercises,
-        "DBActiveSessions",
+        ACTIVE_SESSIONS_TABLE_NAME,
     );
 };

@@ -61,22 +61,16 @@ resource "aws_lambda_permission" "api_gateway_invoke" {
   principal     = "apigateway.amazonaws.com"
 }
 
-resource "aws_api_gateway_resource" "resource" {
-  rest_api_id = var.api_id
-  parent_id   = var.api_parent_id
-  path_part   = var.name
-}
-
 resource "aws_api_gateway_method" "method" {
   rest_api_id   = var.api_id
-  resource_id   = aws_api_gateway_resource.resource.id
+  resource_id   = var.resource_id
   http_method   = var.http_method
   authorization = "NONE"
 }
 
 resource "aws_api_gateway_integration" "integration" {
   rest_api_id             = var.api_id
-  resource_id             = aws_api_gateway_resource.resource.id
+  resource_id             = var.resource_id
   http_method             = var.http_method
   integration_http_method = "POST"
   type                    = "AWS_PROXY"

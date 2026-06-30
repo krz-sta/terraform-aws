@@ -1,12 +1,14 @@
 import { get } from "../services/db-client.service.js";
 
+const ACTIVE_SESSIONS_TABLE_NAME = process.env.ACTIVE_SESSIONS_TABLE_NAME;
+
 export const getSessionLogic = async (userId, sessionId) => {
     const session = await get(
         "UserId",
         userId,
         "SessionId",
         sessionId,
-        "DBActiveSessions",
+        ACTIVE_SESSIONS_TABLE_NAME,
     );
 
     if (!session) {
