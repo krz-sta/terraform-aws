@@ -1,0 +1,38 @@
+{
+
+  "compilerOptions": {
+
+    "lib": ["es2022"],
+
+    "types": ["jest", "node"],
+
+    "removeComments": true,
+
+    "moduleResolution": "node",
+
+    "noUnusedLocals": true,
+
+    "noUnusedParameters": true,
+
+    "sourceMap": true,
+
+    "target": "es2022",
+
+    "outDir": "lib",
+
+    "resolveJsonModule": true,
+
+    "esModuleInterop": true,
+
+    "allowSyntheticDefaultImports": true,
+
+    "strictNullChecks": true
+
+  },
+
+  "include": ["./**/*.ts"],
+
+  "exclude": ["node_modules/**/*", ".serverless/**/*", ".webpack/**/*", "_warmup/**/*", ".vscode/**/*"]
+
+}
+ 
