@@ -113,7 +113,8 @@ resource "aws_iam_role_policy" "stats_lambda_custom_policy" {
         Effect = "Allow"
         Action = [
           "dynamodb:GetItem",
-          "dynamodb:UpdateItem"
+          "dynamodb:Query",
+          "dynamodb:UpdateItem",
         ]
         Resource = [
           var.ddb_user_stats_table_arn

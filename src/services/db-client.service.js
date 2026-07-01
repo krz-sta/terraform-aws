@@ -4,6 +4,7 @@ import {
     GetCommand,
     UpdateCommand,
     DeleteCommand,
+    QueryCommand,
 } from "@aws-sdk/lib-dynamodb";
 import { docClient } from "../helpers/db-client.helper.js";
 
@@ -79,4 +80,19 @@ export const deleteCmd = async (
             },
         }),
     );
+};
+
+export const queryNoSk = async (partitionKeyName, partitionKey, tableName) => {
+    console.log(`Querying items: PK: ${partitionKey} from ${tableName}`);
+    const result = await docClient.send(
+        new QueryCommand({
+            TableName: tableName,
+            KeyConditionExpression: `${partitionKeyName} = :partitionKey`,
+            ExpressionAttributeValues: {
+                ":partitionKey": partitionKey,
+            },
+        }),
+    );
+    console.log(`Result from query: ${JSON.stringify(result.Items, null, 2)}`);
+    return result.Items || [];
 };
