@@ -14,17 +14,25 @@ export const updateExerciseStats = async (
     const updateParts = [];
     const expressionAttributeValues = {};
 
-    updateParts.push("Best1RM = :best1RM");
-    expressionAttributeValues[":best1RM"] = stats.Best1RM;
+    if (stats.Best1RM !== undefined) {
+        updateParts.push("Best1RM = :best1RM");
+        expressionAttributeValues[":best1RM"] = stats.Best1RM;
+    }
 
-    updateParts.push("BestVolume = :bestVolume");
-    expressionAttributeValues[":bestVolume"] = stats.BestVolume;
+    if (stats.BestVolume !== undefined) {
+        updateParts.push("BestVolume = :bestVolume");
+        expressionAttributeValues[":bestVolume"] = stats.BestVolume;
+    }
 
-    updateParts.push("BestWeight = :bestWeight");
-    expressionAttributeValues[":bestWeight"] = stats.BestWeight;
+    if (stats.BestWeight !== undefined) {
+        updateParts.push("BestWeight = :bestWeight");
+        expressionAttributeValues[":bestWeight"] = stats.BestWeight;
+    }
 
-    updateParts.push("MaxReps = :maxReps");
-    expressionAttributeValues[":maxReps"] = stats.MaxReps;
+    if (stats.MaxReps !== undefined) {
+        updateParts.push("MaxReps = :maxReps");
+        expressionAttributeValues[":maxReps"] = stats.MaxReps;
+    }
 
     await docClient.send(
         new UpdateCommand({
