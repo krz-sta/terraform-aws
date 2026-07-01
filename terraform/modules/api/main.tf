@@ -26,6 +26,12 @@ resource "aws_api_gateway_resource" "resource_save" {
   path_part   = "save"
 }
 
+resource "aws_api_gateway_resource" "resource_stats" {
+  rest_api_id = aws_api_gateway_rest_api.workout_stats_api.id
+  parent_id   = aws_api_gateway_rest_api.workout_stats_api.root_resource_id
+  path_part   = "stats"
+}
+
 locals {
   api_endpoints = {
     "get-status" = {
@@ -227,6 +233,26 @@ locals {
               "dynamodb:UpdateItem"
             ]
             Resource = var.ddb_active_sessions_table_arn
+          }
+        ]
+      })
+    }
+    "get-stats" = {
+      resource_id = aws_api_gateway_resource.resource_stats.id
+      method      = "GET"
+      layers      = [var.shared_libs_layer_arn]
+      env = {
+        USER_STATS_TABLE_NAME = var.ddb_user_stats_table_name
+      }
+      policy = jsonencode({
+        Version = "2012-10-17"
+        Statement = [
+          {
+            Effect = "Allow"
+            Action = [
+              "dynamodb:Query"
+            ]
+            Resource = var.ddb_user_stats_table_arn
           }
         ]
       })
