@@ -9,18 +9,18 @@ const sessionHistoryItem = {
     UserId: "test-user-id",
     SessionId: crypto.randomUUID(),
     Exercises: {
-        "barbell-bench-press": {
+        "barbell-squat": {
             sets: [
-                { weight: 100, reps: 10 },
-                { weight: 125, reps: 8 },
+                { weight: 120, reps: 10 },
+                { weight: 120, reps: 8 },
                 { weight: 120, reps: 6 },
             ],
         },
-        "dumbbell-curl": {
+        deadlift: {
             sets: [
-                { weight: 20, reps: 12 },
-                { weight: 25, reps: 10 },
-                { weight: 30, reps: 8 },
+                { weight: 150, reps: 12 },
+                { weight: 160, reps: 10 },
+                { weight: 180, reps: 8 },
             ],
         },
         "pull-up": {

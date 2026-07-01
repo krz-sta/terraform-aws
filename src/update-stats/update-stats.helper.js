@@ -12,8 +12,16 @@ const normalizeSets = (exerciseData) => {
         return exerciseData.Sets;
     }
 
+    if (Array.isArray(exerciseData?.sets)) {
+        return exerciseData.sets;
+    }
+
     return [];
 };
+
+const getSetWeight = (set) => Number(set.Weight ?? set.weight ?? 0);
+
+const getSetReps = (set) => Number(set.Reps ?? set.reps ?? 0);
 
 const processExercise = async (userId, exerciseName, exerciseData) => {
     let sessionVolume = 0;
@@ -25,8 +33,8 @@ const processExercise = async (userId, exerciseName, exerciseData) => {
     let hasWeightedSet = false;
 
     for (const set of normalizeSets(exerciseData)) {
-        const weight = Number(set.Weight ?? 0);
-        const reps = Number(set.Reps ?? 0);
+        const weight = getSetWeight(set);
+        const reps = getSetReps(set);
 
         sessionReps += reps;
 
@@ -97,7 +105,9 @@ export const calculateSessionStats = async (event) => {
     for (const record of event.Records) {
         const sqsBody = JSON.parse(record.body);
         const message = JSON.parse(sqsBody.Message);
-        const dbRecords = Array.isArray(message.Records) ? message : [message];
+        const dbRecords = Array.isArray(message.Records)
+            ? message.Records
+            : [message];
 
         for (const dbRecord of dbRecords) {
             const sessionData = unmarshall(dbRecord.dynamodb.NewImage);
