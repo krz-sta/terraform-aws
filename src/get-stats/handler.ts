@@ -8,10 +8,7 @@ export const handler = async (event: APIGatewayProxyEvent) => {
     const params = event?.queryStringParameters || {};
 
     console.log("Validating request parameters:", params);
-    const validationErrors = await validateRequest(
-        getStatsSchema as any,
-        params,
-    );
+    const validationErrors = await validateRequest(getStatsSchema, params);
     if (validationErrors) {
         console.log(validationErrors);
         return {
