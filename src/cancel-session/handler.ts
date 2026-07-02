@@ -6,10 +6,7 @@ import { APIGatewayProxyEvent } from "aws-lambda/trigger/api-gateway-proxy.js";
 export const handler = async (event: APIGatewayProxyEvent) => {
     const params = event?.queryStringParameters || {};
 
-    const validationErrors = await validateRequest(
-        cancelSessionSchema as any,
-        params,
-    );
+    const validationErrors = await validateRequest(cancelSessionSchema, params);
     if (validationErrors && validationErrors.length > 0) {
         return {
             statusCode: 400,
