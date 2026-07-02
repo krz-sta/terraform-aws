@@ -1,6 +1,6 @@
 import crypto from "crypto";
 import { querySessionByUserId, startSession } from "./start-session.service.js";
-import { ConflictError } from "../helpers/errors.js";
+import { ConflictError } from "../helpers/error.helper.js";
 
 export const startSessionLogic = async (userId: string) => {
     const existing = await querySessionByUserId(userId);

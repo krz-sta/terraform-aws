@@ -2,7 +2,7 @@ import { APIGatewayProxyEvent } from "aws-lambda/trigger/api-gateway-proxy.js";
 import { validateRequest } from "../helpers/validation.helper.js";
 import { getSessionLogic } from "./get-session.helper.js";
 import { getSessionSchema } from "./get-session.schema.js";
-import { AppError } from "../helpers/errors.js";
+import { AppError } from "../helpers/error.helper.js";
 
 export const handler = async (event: APIGatewayProxyEvent) => {
     const params = event?.queryStringParameters || {};

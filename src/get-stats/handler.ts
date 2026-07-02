@@ -2,7 +2,7 @@ import { APIGatewayProxyEvent } from "aws-lambda";
 import { validateRequest } from "../helpers/validation.helper.js";
 import { getStatsLogic } from "./get-stats.helper.js";
 import { getStatsSchema } from "./get-stats.schema.js";
-import { AppError } from "../helpers/errors.js";
+import { AppError } from "../helpers/error.helper.js";
 
 export const handler = async (event: APIGatewayProxyEvent) => {
     console.log("Received event:", JSON.stringify(event, null, 2));

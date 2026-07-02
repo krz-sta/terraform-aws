@@ -1,4 +1,4 @@
-import { NotFoundError } from "../helpers/errors.js";
+import { NotFoundError } from "../helpers/error.helper.js";
 import { get, update } from "../services/db-client.service.js";
 
 const ACTIVE_SESSIONS_TABLE_NAME = process.env.ACTIVE_SESSIONS_TABLE_NAME;

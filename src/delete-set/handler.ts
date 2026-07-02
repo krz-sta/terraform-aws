@@ -3,7 +3,7 @@ import { deleteSetLogic } from "./delete-set.helper.js";
 import { deleteSetSchema } from "./delete-set.schema.js";
 import { parseBody } from "../helpers/parse-body.helper.js";
 import { APIGatewayProxyEvent } from "aws-lambda/trigger/api-gateway-proxy.js";
-import { AppError } from "../helpers/errors.js";
+import { AppError } from "../helpers/error.helper.js";
 
 export const handler = async (event: APIGatewayProxyEvent) => {
     const body = parseBody(event.body ?? undefined);

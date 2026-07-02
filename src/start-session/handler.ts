@@ -3,7 +3,7 @@ import { startSessionLogic } from "./start-session.helper.js";
 import { startSessionSchema } from "./start-session.schema.js";
 import { validateRequest } from "../helpers/validation.helper.js";
 import { APIGatewayProxyEvent } from "aws-lambda";
-import { AppError } from "../helpers/errors.js";
+import { AppError } from "../helpers/error.helper.js";
 
 export const handler = async (event: APIGatewayProxyEvent) => {
     const body = parseBody(event.body ?? undefined);

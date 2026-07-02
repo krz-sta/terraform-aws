@@ -1,4 +1,4 @@
-import { NotFoundError } from "../helpers/errors.js";
+import { NotFoundError } from "../helpers/error.helper.js";
 import { update, get } from "../services/db-client.service.js";
 import { SetData } from "../types/SetData.js";
 

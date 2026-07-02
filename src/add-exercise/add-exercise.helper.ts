@@ -1,4 +1,4 @@
-import { ConflictError, NotFoundError } from "../helpers/errors.js";
+import { ConflictError, NotFoundError } from "../helpers/error.helper.js";
 import { get, update } from "../services/db-client.service.js";
 
 const ACTIVE_SESSIONS_TABLE_NAME: string | undefined =

@@ -3,7 +3,7 @@ import { addExerciseLogic } from "./add-exercise.helper.js";
 import { addExerciseSchema } from "./add-exercise.schema.js";
 import { validateRequest } from "../helpers/validation.helper.js";
 import { APIGatewayProxyEvent } from "aws-lambda";
-import { AppError } from "../helpers/errors.js";
+import { AppError } from "../helpers/error.helper.js";
 
 export const handler = async (event: APIGatewayProxyEvent) => {
     const body = parseBody(event.body ?? undefined);

@@ -1,4 +1,4 @@
-import { AppError } from "../helpers/errors.js";
+import { AppError } from "../helpers/error.helper.js";
 import { validateRequest } from "../helpers/validation.helper.js";
 import { cancelSessionLogic } from "./cancel-session.helper.js";
 import { cancelSessionSchema } from "./cancel-session.schema.js";

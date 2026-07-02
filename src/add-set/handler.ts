@@ -3,7 +3,7 @@ import { validateRequest } from "../helpers/validation.helper.js";
 import { addSetLogic } from "./add-set.helper.js";
 import { parseBody } from "../helpers/parse-body.helper.js";
 import { APIGatewayProxyEvent } from "aws-lambda";
-import { AppError } from "../helpers/errors.js";
+import { AppError } from "../helpers/error.helper.js";
 
 export const handler = async (event: APIGatewayProxyEvent) => {
     const body = parseBody(event.body ?? undefined);

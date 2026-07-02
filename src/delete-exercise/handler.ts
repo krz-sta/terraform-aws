@@ -3,7 +3,7 @@ import { parseBody } from "../helpers/parse-body.helper.js";
 import { validateRequest } from "../helpers/validation.helper.js";
 import { deleteExerciseLogic } from "./delete-exercise.helper.js";
 import { deleteExerciseSchema } from "./delete-exercise.schema.js";
-import { AppError } from "../helpers/errors.js";
+import { AppError } from "../helpers/error.helper.js";
 
 export const handler = async (event: APIGatewayProxyEvent) => {
     const body = parseBody(event.body ?? undefined);
