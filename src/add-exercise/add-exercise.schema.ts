@@ -1,4 +1,12 @@
-export const addExerciseSchema = {
+import { JSONSchemaType } from "ajv";
+
+export interface AddExerciseRequest {
+    userId: string;
+    sessionId: string;
+    exerciseName: string;
+}
+
+export const addExerciseSchema: JSONSchemaType<AddExerciseRequest> = {
     type: "object",
     properties: {
         userId: {
@@ -14,4 +22,6 @@ export const addExerciseSchema = {
             minLength: 1,
         },
     },
+    required: ["userId", "sessionId", "exerciseName"],
+    additionalProperties: false,
 };
