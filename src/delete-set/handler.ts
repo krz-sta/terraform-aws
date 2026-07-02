@@ -15,10 +15,7 @@ export const handler = async (event: APIGatewayProxyEvent) => {
         };
     }
 
-    const validationErrors = await validateRequest(
-        deleteSetSchema as any,
-        body,
-    );
+    const validationErrors = await validateRequest(deleteSetSchema, body);
 
     if (validationErrors) {
         return {
