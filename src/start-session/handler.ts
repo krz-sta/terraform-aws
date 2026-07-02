@@ -15,10 +15,7 @@ export const handler = async (event: APIGatewayProxyEvent) => {
         };
     }
 
-    const validationErrors = await validateRequest(
-        startSessionSchema as any,
-        body,
-    );
+    const validationErrors = await validateRequest(startSessionSchema, body);
 
     if (validationErrors) {
         return {
