@@ -1,4 +1,12 @@
-export const deleteExerciseSchema = {
+import { JSONSchemaType } from "ajv";
+
+export interface DeleteExerciseRequest {
+    userId: string;
+    sessionId: string;
+    exerciseName: string;
+}
+
+export const deleteExerciseSchema: JSONSchemaType<DeleteExerciseRequest> = {
     type: "object",
     properties: {
         userId: {
@@ -14,4 +22,6 @@ export const deleteExerciseSchema = {
             minLength: 1,
         },
     },
+    required: ["userId", "sessionId", "exerciseName"],
+    additionalProperties: false,
 };
