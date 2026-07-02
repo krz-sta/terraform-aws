@@ -4,11 +4,11 @@
 
     "lib": ["es2022"],
 
-    "types": ["jest", "node"],
+    "types": ["jest", "node", "aws-lambda"],
 
     "removeComments": true,
 
-    "moduleResolution": "node",
+    "moduleResolution": "nodenext",
 
     "noUnusedLocals": true,
 
@@ -20,13 +20,17 @@
 
     "outDir": "lib",
 
+    "rootDir": "src",
+
     "resolveJsonModule": true,
 
     "esModuleInterop": true,
 
     "allowSyntheticDefaultImports": true,
 
-    "strictNullChecks": true
+    "strictNullChecks": true,
+
+    "module": "nodenext"
 
   },
 

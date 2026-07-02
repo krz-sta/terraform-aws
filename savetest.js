@@ -1,4 +1,4 @@
-import { docClient } from "./src/helpers/db-client.helper.js";
+import { docClient } from "./src/helpers/db-client.helper";
 import { PutCommand } from "@aws-sdk/lib-dynamodb";
 import crypto from "crypto";
 
@@ -6,10 +6,10 @@ const startTime = new Date();
 startTime.setMinutes(startTime.getMinutes() - 30);
 
 const sessionHistoryItem = {
-    UserId: "test-user-id",
+    UserId: "krzysztof123",
     SessionId: crypto.randomUUID(),
     Exercises: {
-        "barbell-squat": {
+        barbell_bench_press: {
             sets: [
                 { weight: 120, reps: 10 },
                 { weight: 120, reps: 8 },
