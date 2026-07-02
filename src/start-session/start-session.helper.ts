@@ -1,12 +1,13 @@
 import crypto from "crypto";
 import { querySessionByUserId, startSession } from "./start-session.service.js";
+import { ConflictError } from "../helpers/errors.js";
 
 export const startSessionLogic = async (userId: string) => {
     const existing = await querySessionByUserId(userId);
     if (existing) {
-        const error: any = new Error("SESSION_ALREADY_EXISTS");
-        error.existingSessionId = existing.SessionId;
-        throw error;
+        throw new ConflictError("User already has an active session.", {
+            sessionId: existing.SessionId,
+        });
     }
 
     const sessionId = crypto.randomUUID();

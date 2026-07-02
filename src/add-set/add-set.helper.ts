@@ -1,13 +1,20 @@
+import { NotFoundError } from "../helpers/errors.js";
 import { update, get } from "../services/db-client.service.js";
-import { SetData } from "../types/SetData.js"
+import { SetData } from "../types/SetData.js";
 
-const ACTIVE_SESSIONS_TABLE_NAME: string | undefined = process.env.ACTIVE_SESSIONS_TABLE_NAME;
+const ACTIVE_SESSIONS_TABLE_NAME: string | undefined =
+    process.env.ACTIVE_SESSIONS_TABLE_NAME;
 
 if (!ACTIVE_SESSIONS_TABLE_NAME) {
     throw new Error("Missing environment variable.");
 }
 
-export const addSetLogic = async (userId: string, sessionId: string, exerciseName:string, setData: SetData) => {
+export const addSetLogic = async (
+    userId: string,
+    sessionId: string,
+    exerciseName: string,
+    setData: SetData,
+) => {
     const session = await get(
         "UserId",
         userId,
@@ -17,7 +24,7 @@ export const addSetLogic = async (userId: string, sessionId: string, exerciseNam
     );
 
     if (!session) {
-        throw new Error("SESSION_NOT_FOUND");
+        throw new NotFoundError("Session not found.");
     }
 
     let updatedExercises = session.Exercises || {};

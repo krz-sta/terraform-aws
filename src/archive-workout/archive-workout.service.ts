@@ -8,7 +8,7 @@ export const saveWorkoutSnapshot = async (fileKey: string, workout: object) => {
         new PutObjectCommand({
             Bucket: bucketName,
             Key: fileKey,
-            Body: JSON.stringify(workout, null, 2),
+            Body: JSON.stringify(workout),
             ContentType: "application/json",
         }),
     );

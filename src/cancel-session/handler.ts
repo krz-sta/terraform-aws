@@ -1,3 +1,4 @@
+import { AppError } from "../helpers/errors.js";
 import { validateRequest } from "../helpers/validation.helper.js";
 import { cancelSessionLogic } from "./cancel-session.helper.js";
 import { cancelSessionSchema } from "./cancel-session.schema.js";
@@ -29,21 +30,20 @@ export const handler = async (event: APIGatewayProxyEvent) => {
             }),
         };
     } catch (e: any) {
-        if (e.name === "ConditionalCheckFailedException") {
+        if (e instanceof AppError) {
             return {
-                statusCode: 404,
+                statusCode: e.statusCode,
                 body: JSON.stringify({
-                    message: "Session not found.",
+                    message: e.message,
+                    ...(e.data && { details: e.data }),
                 }),
             };
         }
 
-        console.error("Unhandled error:", e);
+        console.error("Unhandler error:", e);
         return {
             statusCode: 500,
-            body: JSON.stringify({
-                message: "Unhandled server error.",
-            }),
+            body: JSON.stringify({ message: "Unhandled server error." }),
         };
     }
 };

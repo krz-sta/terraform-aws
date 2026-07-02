@@ -1,3 +1,4 @@
+import { NotFoundError } from "../helpers/errors.js";
 import { update, get } from "../services/db-client.service.js";
 
 const ACTIVE_SESSIONS_TABLE_NAME = process.env.ACTIVE_SESSIONS_TABLE_NAME;
@@ -21,7 +22,7 @@ export const deleteSetLogic = async (
     );
 
     if (!session) {
-        throw new Error("SESSION_NOT_FOUND");
+        throw new NotFoundError("Session not found.");
     }
 
     let updatedExercises = session.Exercises || {};
@@ -30,7 +31,7 @@ export const deleteSetLogic = async (
         !updatedExercises[exerciseName] ||
         !updatedExercises[exerciseName].Sets[setIndex]
     ) {
-        throw new Error("SET_NOT_FOUND");
+        throw new NotFoundError("Set not found.");
     }
 
     delete updatedExercises[exerciseName].Sets[setIndex];

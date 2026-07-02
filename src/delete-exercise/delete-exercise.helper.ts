@@ -1,3 +1,4 @@
+import { NotFoundError } from "../helpers/errors.js";
 import { get, update } from "../services/db-client.service.js";
 
 const ACTIVE_SESSIONS_TABLE_NAME = process.env.ACTIVE_SESSIONS_TABLE_NAME;
@@ -20,13 +21,13 @@ export const deleteExerciseLogic = async (
     );
 
     if (!session) {
-        throw new Error("SESSION_NOT_FOUND");
+        throw new NotFoundError("Session not found.");
     }
 
     let updatedExercises = session.Exercises || {};
 
     if (!updatedExercises[exerciseName]) {
-        throw new Error("EXERCISE_NOT_FOUND");
+        throw new NotFoundError("Exercise not found.");
     }
 
     delete updatedExercises[exerciseName];

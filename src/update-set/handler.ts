@@ -3,6 +3,7 @@ import { validateRequest } from "../helpers/validation.helper.js";
 import { updateSetLogic } from "./update-set.helper.js";
 import { parseBody } from "../helpers/parse-body.helper.js";
 import { APIGatewayProxyEvent } from "aws-lambda/trigger/api-gateway-proxy.js";
+import { AppError } from "../helpers/errors.js";
 
 export const handler = async (event: APIGatewayProxyEvent) => {
     const body = parseBody(event.body ?? undefined);
@@ -43,28 +44,20 @@ export const handler = async (event: APIGatewayProxyEvent) => {
             }),
         };
     } catch (e: any) {
-        if (e.message === "SESSION_NOT_FOUND") {
+        if (e instanceof AppError) {
             return {
-                statusCode: 404,
+                statusCode: e.statusCode,
                 body: JSON.stringify({
-                    message: "Session not found.",
-                }),
-            };
-        } else if (e.message === "SET_NOT_FOUND") {
-            return {
-                statusCode: 404,
-                body: JSON.stringify({
-                    message: "Set not found in the session.",
+                    message: e.message,
+                    ...(e.data && { details: e.data }),
                 }),
             };
         }
 
-        console.error("Unhandled error:", e);
+        console.error("Unhandler error:", e);
         return {
             statusCode: 500,
-            body: JSON.stringify({
-                message: "Unhandled server error.",
-            }),
+            body: JSON.stringify({ message: "Unhandled server error." }),
         };
     }
 };

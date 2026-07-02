@@ -2,6 +2,7 @@ import { APIGatewayProxyEvent } from "aws-lambda";
 import { validateRequest } from "../helpers/validation.helper.js";
 import { getStatsLogic } from "./get-stats.helper.js";
 import { getStatsSchema } from "./get-stats.schema.js";
+import { AppError } from "../helpers/errors.js";
 
 export const handler = async (event: APIGatewayProxyEvent) => {
     console.log("Received event:", JSON.stringify(event, null, 2));
@@ -29,12 +30,20 @@ export const handler = async (event: APIGatewayProxyEvent) => {
             body: JSON.stringify(stats),
         };
     } catch (e) {
-        console.error("Unhandled error:", e);
+        if (e instanceof AppError) {
+            return {
+                statusCode: e.statusCode,
+                body: JSON.stringify({
+                    message: e.message,
+                    ...(e.data && { details: e.data }),
+                }),
+            };
+        }
+
+        console.error("Unhandler error:", e);
         return {
             statusCode: 500,
-            body: JSON.stringify({
-                message: "Unhandled server error",
-            }),
+            body: JSON.stringify({ message: "Unhandled server error." }),
         };
     }
 };
