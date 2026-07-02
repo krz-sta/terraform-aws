@@ -1,32 +1,14 @@
-import { updateSetSchema } from "./update-set.schema.js";
-import { validateRequest } from "../helpers/validation.helper.js";
+import { Http } from "../helpers/http.helper.js";
+import { APIGatewayProxyEvent } from "aws-lambda";
 import { updateSetLogic } from "./update-set.helper.js";
-import { parseBody } from "../helpers/parse-body.helper.js";
-import { APIGatewayProxyEvent } from "aws-lambda/trigger/api-gateway-proxy.js";
-import { AppError } from "../helpers/error.helper.js";
+import { updateSetSchema } from "./update-set.schema.js";
 
 export const handler = async (event: APIGatewayProxyEvent) => {
-    const body = parseBody(event.body ?? undefined);
-    if (!body) {
-        return {
-            statusCode: 400,
-            body: JSON.stringify({
-                message: "Invalid JSON in request body.",
-            }),
-        };
-    }
-
-    const validationErrors = await validateRequest(updateSetSchema, body);
-
-    if (validationErrors) {
-        return {
-            statusCode: 400,
-            body: JSON.stringify({
-                message: "Schema validation failed.",
-                validationErrors,
-            }),
-        };
-    }
+    const { errorResponse, data: body } = await Http.parseAndValidate(
+        event,
+        updateSetSchema,
+    );
+    if (errorResponse) return errorResponse;
 
     try {
         await updateSetLogic(
@@ -37,27 +19,10 @@ export const handler = async (event: APIGatewayProxyEvent) => {
             body.setData,
         );
 
-        return {
-            statusCode: 200,
-            body: JSON.stringify({
-                message: "Set updated successfully.",
-            }),
-        };
-    } catch (e: any) {
-        if (e instanceof AppError) {
-            return {
-                statusCode: e.statusCode,
-                body: JSON.stringify({
-                    message: e.message,
-                    ...(e.data && { details: e.data }),
-                }),
-            };
-        }
-
-        console.error("Unhandler error:", e);
-        return {
-            statusCode: 500,
-            body: JSON.stringify({ message: "Unhandled server error." }),
-        };
+        return Http.success(200, {
+            message: "Set updated successfully.",
+        });
+    } catch (e) {
+        return Http.error(e);
     }
 };
