@@ -1,4 +1,17 @@
-export const updateSetSchema = {
+import { JSONSchemaType } from "ajv";
+
+export interface UpdateSetRequest {
+    userId: string;
+    sessionId: string;
+    exerciseName: string;
+    setIndex: number;
+    setData: {
+        weight: number;
+        reps: number;
+    };
+}
+
+export const updateSetSchema: JSONSchemaType<UpdateSetRequest> = {
     type: "object",
     properties: {
         userId: { type: "string", minLength: 1 },

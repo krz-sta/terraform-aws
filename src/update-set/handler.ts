@@ -15,10 +15,7 @@ export const handler = async (event: APIGatewayProxyEvent) => {
         };
     }
 
-    const validationErrors = await validateRequest(
-        updateSetSchema as any,
-        body,
-    );
+    const validationErrors = await validateRequest(updateSetSchema, body);
 
     if (validationErrors) {
         return {
