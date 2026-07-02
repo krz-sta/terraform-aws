@@ -6,10 +6,7 @@ import { getSessionSchema } from "./get-session.schema.js";
 export const handler = async (event: APIGatewayProxyEvent) => {
     const params = event?.queryStringParameters || {};
 
-    const validationErrors = await validateRequest(
-        getSessionSchema as any,
-        params,
-    );
+    const validationErrors = await validateRequest(getSessionSchema, params);
     if (validationErrors) {
         return {
             statusCode: 400,
