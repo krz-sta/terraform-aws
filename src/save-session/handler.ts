@@ -15,10 +15,7 @@ export const handler = async (event: APIGatewayProxyEvent) => {
         };
     }
 
-    const validationErrors = await validateRequest(
-        saveSessionSchema as any,
-        body,
-    );
+    const validationErrors = await validateRequest(saveSessionSchema, body);
 
     if (validationErrors) {
         return {
