@@ -66,6 +66,7 @@ resource "aws_api_gateway_method" "method" {
   resource_id   = var.resource_id
   http_method   = var.http_method
   authorization = var.authorizer_id == null ? "NONE" : "COGNITO_USER_POOLS"
+  authorizer_id = var.authorizer_id
 }
 
 resource "aws_api_gateway_integration" "integration" {

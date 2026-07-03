@@ -78,12 +78,23 @@ export const Http = {
             (!event.body && event.queryStringParameters);
 
         if (hasBody) {
-            event.queryStringParameters
-                ? (dataToValidate = event.queryStringParameters)
-                : (dataToValidate = {});
+            dataToValidate = event.queryStringParameters
+                ? { ...event.queryStringParameters }
+                : {};
         } else {
             const rawBody = event.body ? event.body : undefined;
             dataToValidate = Http.parseBody(rawBody);
+        }
+
+        const cognitoUserId =
+            event.requestContext?.authorizer?.claims?.sub ||
+            event.requestContext?.authorizer?.claims?.username;
+        if (
+            dataToValidate &&
+            typeof dataToValidate === "object" &&
+            cognitoUserId
+        ) {
+            (dataToValidate as any).userId = cognitoUserId;
         }
 
         const validationErrors = await Http.validate(schema, dataToValidate);

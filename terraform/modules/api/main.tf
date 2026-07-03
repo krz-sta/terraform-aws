@@ -40,6 +40,7 @@ locals {
       layers      = []
       env         = {}
       policy      = ""
+      secured     = false
     }
     "start-session" = {
       resource_id = aws_api_gateway_resource.resource_active_session.id
@@ -272,6 +273,7 @@ module "api_endpoints" {
   layers             = each.value.layers
   env_variables      = each.value.env
   custom_policy_json = each.value.policy
+  authorizer_id      = try(each.value.secured, true) ? aws_api_gateway_authorizer.cognito.id : null
 }
 
 resource "aws_api_gateway_deployment" "workout_stats_api_deployment" {
