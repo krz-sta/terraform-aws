@@ -28,3 +28,8 @@ variable "custom_policy_json" {
   type    = string
   default = ""
 }
+
+variable "authorizer_id" {
+  type    = string
+  default = null
+}

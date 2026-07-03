@@ -27,6 +27,8 @@ module "api" {
   ddb_session_history_stream_arn = module.storage.ddb_session_history_stream_arn
   ddb_user_stats_table_name      = module.storage.ddb_user_stats_table_name
   ddb_user_stats_table_arn       = module.storage.ddb_user_stats_table_arn
+
+  cognito_user_pool_arn = module.auth.user_pool_arn
 }
 
 module "workers" {
@@ -37,4 +39,9 @@ module "workers" {
   s3_workouts_archive_bucket_arn  = module.storage.s3_workouts_archive_bucket_arn
   ddb_user_stats_table_name       = module.storage.ddb_user_stats_table_name
   ddb_user_stats_table_arn        = module.storage.ddb_user_stats_table_arn
+}
+
+
+module "auth" {
+  source = "./modules/auth"
 }

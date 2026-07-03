@@ -29,3 +29,7 @@ variable "ddb_user_stats_table_arn" {
 variable "shared_libs_layer_arn" {
   type = string
 }
+
+variable "cognito_user_pool_arn" {
+  type = string
+}

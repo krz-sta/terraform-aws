@@ -293,3 +293,10 @@ resource "aws_api_gateway_stage" "workout_stats_api_stage" {
   rest_api_id   = aws_api_gateway_rest_api.workout_stats_api.id
   deployment_id = aws_api_gateway_deployment.workout_stats_api_deployment.id
 }
+
+resource "aws_api_gateway_authorizer" "cognito" {
+  name          = "cognito-authorizer"
+  type          = "COGNITO_USER_POOLS"
+  rest_api_id   = aws_api_gateway_rest_api.workout_stats_api.id
+  provider_arns = [var.cognito_user_pool_arn]
+}
