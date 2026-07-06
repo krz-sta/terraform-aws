@@ -1,157 +1,49 @@
-data "archive_file" "archive_lambda_zip" {
-  type        = "zip"
-  source_dir  = "${path.root}/../dist/archive-workout"
-  output_path = "${path.root}/../dist/zip/archive-workout.zip"
+module "archive_iam" {
+  source = "../iam"
+
+  name                 = "${var.prefix}-archive-workout"
+  custom_policy_json   = data.aws_iam_policy_document.archive_iam.json
+  create_custom_policy = true
 }
 
-resource "aws_iam_role" "archive_lambda_role" {
-  name = "archive-workout-lambda-role"
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Action = "sts:AssumeRole"
-        Effect = "Allow"
-        Principal = {
-          Service = "lambda.amazonaws.com"
-        }
-      }
-    ]
-  })
-}
+module "archive_lambda" {
+  source = "../lambda"
 
-resource "aws_iam_role_policy_attachment" "archive_lambda_basic_execution" {
-  role       = aws_iam_role.archive_lambda_role.name
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
-}
-
-resource "aws_iam_role_policy" "archive_lambda_custom_policy" {
-  name = "archive-workout-lambda-custom-policy"
-  role = aws_iam_role.archive_lambda_role.id
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Action = [
-          "s3:PutObject"
-        ]
-        Resource = [
-          "${var.s3_workouts_archive_bucket_arn}/*"
-        ]
-      },
-      {
-        Effect = "Allow"
-        Action = [
-          "sqs:ReceiveMessage",
-          "sqs:DeleteMessage",
-          "sqs:GetQueueAttributes"
-        ]
-        Resource = [
-          aws_sqs_queue.archive_queue.arn
-        ]
-      }
-    ]
-  })
-}
-
-resource "aws_lambda_function" "archive_lambda" {
-  function_name = "archive-workout-lambda"
-  runtime       = "nodejs24.x"
-  handler       = "handler.handler"
-  filename      = data.archive_file.archive_lambda_zip.output_path
-  code_sha256   = data.archive_file.archive_lambda_zip.output_base64sha256
-  role          = aws_iam_role.archive_lambda_role.arn
-
-  environment {
-    variables = {
-      WORKOUTS_ARCHIVE_BUCKET_NAME = var.s3_workouts_archive_bucket_name
-    }
+  name     = "${var.prefix}-archive-workout"
+  zip_path = "${path.root}/../dist/zip/archive-workout.zip"
+  role_arn = module.archive_iam.role_arn
+  env_variables = {
+    WORKOUTS_ARCHIVE_BUCKET_NAME = var.s3_workouts_archive_bucket_name
   }
 }
 
 resource "aws_lambda_event_source_mapping" "archive_lambda_sqs_trigger" {
-  event_source_arn = aws_sqs_queue.archive_queue.arn
-  function_name    = aws_lambda_function.archive_lambda.arn
+  event_source_arn = aws_sqs_queue.archive.arn
+  function_name    = module.archive_lambda.function_arn
   batch_size       = 10
 }
 
-data "archive_file" "stats_lambda_zip" {
-  type        = "zip"
-  source_dir  = "${path.root}/../dist/update-stats"
-  output_path = "${path.root}/../dist/zip/update-stats.zip"
+module "stats_iam" {
+  source = "../iam"
+
+  name                 = "${var.prefix}-update-stats"
+  custom_policy_json   = data.aws_iam_policy_document.stats_iam.json
+  create_custom_policy = true
 }
 
-resource "aws_iam_role" "stats_lambda_role" {
-  name = "update-stats-lambda-role"
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Action = "sts:AssumeRole"
-        Effect = "Allow"
-        Principal = {
-          Service = "lambda.amazonaws.com"
-        }
-      }
-    ]
-  })
-}
+module "stats_lambda" {
+  source = "../lambda"
 
-resource "aws_iam_role_policy_attachment" "stats_lambda_basic_execution" {
-  role       = aws_iam_role.stats_lambda_role.name
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
-}
-
-resource "aws_iam_role_policy" "stats_lambda_custom_policy" {
-  name = "update-stats-lambda-custom-policy"
-  role = aws_iam_role.stats_lambda_role.id
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Action = [
-          "dynamodb:GetItem",
-          "dynamodb:Query",
-          "dynamodb:UpdateItem",
-        ]
-        Resource = [
-          var.ddb_user_stats_table_arn
-        ]
-      },
-      {
-        Effect = "Allow"
-        Action = [
-          "sqs:ReceiveMessage",
-          "sqs:DeleteMessage",
-          "sqs:GetQueueAttributes"
-        ]
-        Resource = [
-          aws_sqs_queue.stats_queue.arn
-        ]
-      }
-    ]
-  })
-}
-
-resource "aws_lambda_function" "stats_lambda" {
-  function_name = "update-stats-lambda"
-  runtime       = "nodejs24.x"
-  handler       = "handler.handler"
-  filename      = data.archive_file.stats_lambda_zip.output_path
-  code_sha256   = data.archive_file.stats_lambda_zip.output_base64sha256
-  role          = aws_iam_role.stats_lambda_role.arn
-
-  environment {
-    variables = {
-      USER_STATS_TABLE_NAME = var.ddb_user_stats_table_name
-    }
+  name     = "${var.prefix}-update-stats"
+  zip_path = "${path.root}/../dist/zip/update-stats.zip"
+  role_arn = module.stats_iam.role_arn
+  env_variables = {
+    USER_STATS_TABLE_NAME = var.ddb_user_stats_table_name
   }
 }
 
 resource "aws_lambda_event_source_mapping" "stats_lambda_sqs_trigger" {
-  event_source_arn = aws_sqs_queue.stats_queue.arn
-  function_name    = aws_lambda_function.stats_lambda.arn
+  event_source_arn = aws_sqs_queue.stats.arn
+  function_name    = module.stats_lambda.function_arn
   batch_size       = 10
 }

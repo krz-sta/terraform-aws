@@ -1,35 +1,13 @@
 resource "aws_glue_catalog_database" "workout_analytics" {
-  name = "workout-analytics-db"
+  name = replace("${var.prefix}-analytics-db", "-", "_")
 }
 
-resource "aws_iam_role" "glue_crawler_role" {
-  name = "glue-crawler-role"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Action = "sts:AssumeRole"
-        Effect = "Allow"
-        Principal = {
-          Service = "glue.amazonaws.com"
-        }
-      }
-    ]
-  })
-}
-
-resource "aws_iam_role_policy_attachment" "glue_service" {
-  role       = aws_iam_role.glue_crawler_role.name
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSGlueServiceRole"
-}
-
-resource "aws_iam_role_policy" "glue_s3_access" {
-  name = "glue-s3-access"
-
-  role = aws_iam_role.glue_crawler_role.id
-
-  policy = jsonencode({
+module "glue_iam" {
+  source                 = "../iam"
+  name                   = "${var.prefix}-glue-crawler"
+  service_principal      = "glue.amazonaws.com"
+  attach_basic_execution = false
+  custom_policy_json = jsonencode({
     Version = "2012-10-17"
     Statement = [
       {
@@ -39,20 +17,26 @@ resource "aws_iam_role_policy" "glue_s3_access" {
         ]
         Effect = "Allow"
         Resource = [
-          aws_s3_bucket.s3_workouts_archive.arn, "${aws_s3_bucket.s3_workouts_archive.arn}/*"
+          aws_s3_bucket.workouts_archive.arn, "${aws_s3_bucket.workouts_archive.arn}/*"
         ]
       }
     ]
   })
+  create_custom_policy = true
+}
+
+resource "aws_iam_role_policy_attachment" "glue_service" {
+  role       = module.glue_iam.role_name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSGlueServiceRole"
 }
 
 resource "aws_glue_crawler" "workout_analytics_crawler" {
-  name          = "workout-analytics-crawler"
+  name          = "${var.prefix}-analytics-crawler"
   database_name = aws_glue_catalog_database.workout_analytics.name
-  role          = aws_iam_role.glue_crawler_role.arn
+  role          = module.glue_iam.role_arn
 
   s3_target {
-    path = "s3://${aws_s3_bucket.s3_workouts_archive.bucket}"
+    path = "s3://${aws_s3_bucket.workouts_archive.bucket}"
   }
 
   schema_change_policy {
@@ -71,11 +55,12 @@ resource "aws_glue_crawler" "workout_analytics_crawler" {
 }
 
 resource "aws_s3_bucket" "athena_results" {
-  bucket_prefix = "athena-results"
+  bucket_prefix = "${var.prefix}-athena-"
 }
 
 resource "aws_athena_workgroup" "workout_analytics_workgroup" {
-  name = "workout-analytics-workgroup"
+  name          = "${var.prefix}-analytics-wg"
+  force_destroy = true
 
   configuration {
     result_configuration {

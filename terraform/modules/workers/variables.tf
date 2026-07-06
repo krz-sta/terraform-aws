@@ -1,3 +1,7 @@
+variable "prefix" {
+  type = string
+}
+
 variable "ddb_session_history_stream_arn" {
   type = string
 }
