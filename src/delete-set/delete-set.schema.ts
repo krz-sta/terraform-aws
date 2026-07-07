@@ -1,11 +1,5 @@
 import { JSONSchemaType } from "ajv";
-
-export interface DeleteSetRequest {
-    userId: string;
-    sessionId: string;
-    exerciseName: string;
-    setIndex: number;
-}
+import { DeleteSetRequest } from "../types/requests.js";
 
 export const deleteSetSchema: JSONSchemaType<DeleteSetRequest> = {
     type: "object",

@@ -1,14 +1,5 @@
 import { JSONSchemaType } from "ajv";
-
-export interface AddSetRequest {
-    userId: string;
-    sessionId: string;
-    exerciseName: string;
-    setData: {
-        weight: number;
-        reps: number;
-    };
-}
+import { AddSetRequest } from "../types/requests.js";
 
 export const addSetSchema: JSONSchemaType<AddSetRequest> = {
     type: "object",

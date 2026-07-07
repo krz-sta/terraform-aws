@@ -1,8 +1,5 @@
 import { JSONSchemaType } from "ajv";
-
-export interface GetStatsRequest {
-    userId: string;
-}
+import { GetStatsRequest } from "../types/requests.js";
 
 export const getStatsSchema: JSONSchemaType<GetStatsRequest> = {
     type: "object",

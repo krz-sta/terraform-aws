@@ -1,9 +1,5 @@
 import { JSONSchemaType } from "ajv";
-
-export interface SaveSessionRequest {
-    userId: string;
-    sessionId: string;
-}
+import { SaveSessionRequest } from "../types/requests.js";
 
 export const saveSessionSchema: JSONSchemaType<SaveSessionRequest> = {
     type: "object",

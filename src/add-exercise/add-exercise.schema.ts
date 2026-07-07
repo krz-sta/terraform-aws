@@ -1,10 +1,5 @@
 import { JSONSchemaType } from "ajv";
-
-export interface AddExerciseRequest {
-    userId: string;
-    sessionId: string;
-    exerciseName: string;
-}
+import { AddExerciseRequest } from "../types/requests.js";
 
 export const addExerciseSchema: JSONSchemaType<AddExerciseRequest> = {
     type: "object",

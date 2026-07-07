@@ -1,9 +1,5 @@
 import { JSONSchemaType } from "ajv";
-
-export interface CancelSessionRequest {
-    userId: string;
-    sessionId: string;
-}
+import { CancelSessionRequest } from "../types/requests.js";
 
 export const cancelSessionSchema: JSONSchemaType<CancelSessionRequest> = {
     type: "object",
