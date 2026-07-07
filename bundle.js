@@ -1,7 +1,7 @@
 import esbuild from "esbuild";
 import fs from "fs";
 import { execSync } from "child_process";
-import { ZipArchive } from "archiver";
+import archiver from "archiver";
 
 const entryPoints = [
     "src/get-status/handler.ts",
@@ -22,7 +22,7 @@ const entryPoints = [
 function zipDirectory(sourceDir, outputPath) {
     return new Promise((resolve, reject) => {
         const output = fs.createWriteStream(outputPath);
-        const archive = new ZipArchive({
+        const archive = archiver("zip", {
             zlib: { level: 9 },
         });
 
@@ -55,7 +55,7 @@ async function runBuild() {
         platform: "node",
         target: "node24",
         outdir: "dist",
-        external: ["@aws-sdk/*", "ajv"],
+        external: ["@aws-sdk/*", "ajv", "@dsnp/parquetjs"],
     });
 
     console.log("Creating zip files...");

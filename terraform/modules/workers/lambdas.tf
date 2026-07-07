@@ -12,6 +12,7 @@ module "archive_lambda" {
   name     = "${var.prefix}-archive-workout"
   zip_path = "${path.root}/../dist/zip/archive-workout.zip"
   role_arn = module.archive_iam.role_arn
+  layers   = [var.shared_libs_layer_arn]
   env_variables = {
     WORKOUTS_ARCHIVE_BUCKET_NAME = var.s3_workouts_archive_bucket_name
   }
@@ -37,6 +38,7 @@ module "stats_lambda" {
   name     = "${var.prefix}-update-stats"
   zip_path = "${path.root}/../dist/zip/update-stats.zip"
   role_arn = module.stats_iam.role_arn
+  layers   = [var.shared_libs_layer_arn]
   env_variables = {
     USER_STATS_TABLE_NAME = var.ddb_user_stats_table_name
   }

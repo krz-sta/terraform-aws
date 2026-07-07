@@ -39,7 +39,7 @@ const sessionHistoryItem = {
 try {
     await docClient.send(
         new PutCommand({
-            TableName: "db-session-history",
+            TableName: "workout-stats-api-session-history",
             Item: sessionHistoryItem,
         }),
     );

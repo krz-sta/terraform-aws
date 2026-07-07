@@ -2,6 +2,10 @@ variable "prefix" {
   type = string
 }
 
+variable "shared_libs_layer_arn" {
+  type = string
+}
+
 variable "ddb_session_history_stream_arn" {
   type = string
 }

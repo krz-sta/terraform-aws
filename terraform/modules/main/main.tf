@@ -38,6 +38,8 @@ module "workers" {
   source = "../workers"
   prefix = local.prefix
 
+  shared_libs_layer_arn = aws_lambda_layer_version.shared_libs.arn
+
   ddb_session_history_stream_arn  = module.storage.ddb_session_history_stream_arn
   s3_workouts_archive_bucket_name = module.storage.s3_workouts_archive_bucket_name
   s3_workouts_archive_bucket_arn  = module.storage.s3_workouts_archive_bucket_arn
