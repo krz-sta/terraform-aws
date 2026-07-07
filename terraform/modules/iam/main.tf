@@ -9,18 +9,18 @@ data "aws_iam_policy_document" "assume_role" {
   }
 }
 
-resource "aws_iam_role" "this" {
+resource "aws_iam_role" "role" {
   name               = "${var.name}-role"
   assume_role_policy = data.aws_iam_policy_document.assume_role.json
 }
 
 resource "aws_iam_role_policy_attachment" "basic_execution" {
   count      = var.attach_basic_execution ? 1 : 0
-  role       = aws_iam_role.this.name
+  role       = aws_iam_role.role.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
-resource "aws_iam_policy" "this" {
+resource "aws_iam_policy" "policy" {
   count  = var.create_custom_policy ? 1 : 0
   name   = "${var.name}-custom-policy"
   policy = var.custom_policy_json
@@ -28,6 +28,6 @@ resource "aws_iam_policy" "this" {
 
 resource "aws_iam_role_policy_attachment" "custom" {
   count      = var.create_custom_policy ? 1 : 0
-  role       = aws_iam_role.this.name
-  policy_arn = aws_iam_policy.this[0].arn
+  role       = aws_iam_role.role.name
+  policy_arn = aws_iam_policy.policy[0].arn
 }

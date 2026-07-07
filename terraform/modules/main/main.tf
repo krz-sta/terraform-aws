@@ -19,41 +19,19 @@ module "auth" {
   prefix = local.prefix
 }
 
-module "api_iam" {
-  source   = "../iam"
-  for_each = local.api_endpoints
-
-  name                 = "${local.prefix}-${each.key}"
-  custom_policy_json   = each.value.policy
-  create_custom_policy = each.value.create_custom_policy
-}
-
-module "api_lambda" {
-  source   = "../lambda"
-  for_each = local.api_endpoints
-
-  name          = "${local.prefix}-${each.key}"
-  zip_path      = "${path.root}/../dist/zip/${each.key}.zip"
-  role_arn      = module.api_iam[each.key].role_arn
-  layers        = each.value.layers
-  env_variables = each.value.env
-}
-
 module "api" {
-  source = "../api"
-  prefix = local.prefix
-
-  endpoints = {
-    for name, config in local.api_endpoints : name => {
-      path                 = config.path
-      method               = config.method
-      lambda_invoke_arn    = module.api_lambda[name].invoke_arn
-      lambda_function_name = module.api_lambda[name].function_name
-      secured              = try(config.secured, true)
-    }
-  }
-
+  source                = "../api"
+  prefix                = local.prefix
   cognito_user_pool_arn = module.auth.user_pool_arn
+
+  shared_libs_layer_arn = aws_lambda_layer_version.shared_libs.arn
+
+  active_sessions_table_arn  = module.storage.ddb_active_sessions_table_arn
+  active_sessions_table_name = module.storage.ddb_active_sessions_table_name
+  session_history_table_arn  = module.storage.ddb_session_history_table_arn
+  session_history_table_name = module.storage.ddb_session_history_table_name
+  user_stats_table_arn       = module.storage.ddb_user_stats_table_arn
+  user_stats_table_name      = module.storage.ddb_user_stats_table_name
 }
 
 module "workers" {
