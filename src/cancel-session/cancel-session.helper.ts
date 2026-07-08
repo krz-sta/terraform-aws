@@ -1,19 +1,18 @@
 import { NotFoundError } from "../helpers/error.helper.js";
-import { deleteCmd } from "../services/db-client.service.js";
+import { requireEnv } from "../helpers/env.helper.js";
+import { delete as deleteItem } from "../services/db-client.service.js";
 
-const ACTIVE_SESSIONS_TABLE_NAME = process.env.ACTIVE_SESSIONS_TABLE_NAME;
+const ACTIVE_SESSIONS_TABLE_NAME = requireEnv("ACTIVE_SESSIONS_TABLE_NAME");
 
-if (!ACTIVE_SESSIONS_TABLE_NAME) {
-    throw new Error("Missing environment variable.");
-}
-
-export const cancelSessionLogic = async (userId: string, sessionId: string) => {
+export async function cancelSessionLogic(userId: string, sessionId: string) {
     try {
-        await deleteCmd(
-            "UserId",
-            userId,
-            "SessionId",
-            sessionId,
+        await deleteItem(
+            {
+                pkName: "UserId",
+                pk: userId,
+                skName: "SessionId",
+                sk: sessionId,
+            },
             ACTIVE_SESSIONS_TABLE_NAME,
         );
     } catch (e: any) {
@@ -22,4 +21,4 @@ export const cancelSessionLogic = async (userId: string, sessionId: string) => {
         }
         throw e;
     }
-};
+}

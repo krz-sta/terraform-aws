@@ -1,36 +1,32 @@
-import { docClient } from "../helpers/db-client.helper.js";
-import { QueryCommand, PutCommand } from "@aws-sdk/lib-dynamodb";
+import { requireEnv } from "../helpers/env.helper.js";
+import { put, query } from "../services/db-client.service.js";
 
-const ACTIVE_SESSIONS_TABLE_NAME = process.env.ACTIVE_SESSIONS_TABLE_NAME;
+const ACTIVE_SESSIONS_TABLE_NAME = requireEnv("ACTIVE_SESSIONS_TABLE_NAME");
 
-export const querySessionByUserId = async (userId: string) => {
-    const existing = await docClient.send(
-        new QueryCommand({
-            TableName: ACTIVE_SESSIONS_TABLE_NAME,
-            KeyConditionExpression: "UserId = :userId",
-            ExpressionAttributeValues: {
-                ":userId": userId,
-            },
-        }),
+export async function querySessionByUserId(userId: string) {
+    const existing = await query(
+        {
+            pkName: "UserId",
+            pk: userId,
+        },
+        ACTIVE_SESSIONS_TABLE_NAME,
     );
 
-    return existing.Items?.[0] || null;
-};
+    return existing[0] || null;
+}
 
-export const startSession = async (
+export async function startSession(
     userId: string,
     sessionId: string,
     ttl: number,
-) => {
-    await docClient.send(
-        new PutCommand({
-            TableName: ACTIVE_SESSIONS_TABLE_NAME,
-            Item: {
-                UserId: userId,
-                SessionId: sessionId,
-                TimeToExist: ttl,
-                StartTime: new Date().toISOString(),
-            },
-        }),
+) {
+    await put(
+        {
+            UserId: userId,
+            SessionId: sessionId,
+            TimeToExist: ttl,
+            StartTime: new Date().toISOString(),
+        },
+        ACTIVE_SESSIONS_TABLE_NAME,
     );
-};
+}

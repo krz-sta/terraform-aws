@@ -1,19 +1,18 @@
 import { saveSession } from "./save-session.service.js";
+import { requireEnv } from "../helpers/env.helper.js";
 import { get } from "../services/db-client.service.js";
 import { NotFoundError } from "../helpers/error.helper.js";
 
-const ACTIVE_SESSIONS_TABLE_NAME = process.env.ACTIVE_SESSIONS_TABLE_NAME;
+const ACTIVE_SESSIONS_TABLE_NAME = requireEnv("ACTIVE_SESSIONS_TABLE_NAME");
 
-if (!ACTIVE_SESSIONS_TABLE_NAME) {
-    throw new Error("Missing environment variable.");
-}
-
-export const saveSessionLogic = async (userId: string, sessionId: string) => {
+export async function saveSessionLogic(userId: string, sessionId: string) {
     const session = await get(
-        "UserId",
-        userId,
-        "SessionId",
-        sessionId,
+        {
+            pkName: "UserId",
+            pk: userId,
+            skName: "SessionId",
+            sk: sessionId,
+        },
         ACTIVE_SESSIONS_TABLE_NAME,
     );
 
@@ -35,4 +34,4 @@ export const saveSessionLogic = async (userId: string, sessionId: string) => {
     console.log(sessionHistoryItem);
 
     await saveSession(sessionHistoryItem);
-};
+}

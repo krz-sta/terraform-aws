@@ -1,74 +1,69 @@
-import { docClient } from "../helpers/db-client.helper.js";
-import { UpdateCommand } from "@aws-sdk/lib-dynamodb";
+import { requireEnv } from "../helpers/env.helper.js";
+import { add, get, update } from "../services/db-client.service.js";
 
-export const updateExerciseStats = async (
-    userId: string,
-    sortKey: string,
-    stats: any,
-    tableName: string,
-) => {
-    console.log(
-        `Updating exercise stats for user: ${userId}, sortKey: ${sortKey} in ${tableName}`,
-    );
+const USER_STATS_TABLE_NAME = requireEnv("USER_STATS_TABLE_NAME");
 
-    const updateParts = [];
-    const expressionAttributeValues: Record<string, number> = {};
-
-    if (stats.Best1RM !== undefined) {
-        updateParts.push("Best1RM = :best1RM");
-        expressionAttributeValues[":best1RM"] = stats.Best1RM;
-    }
-
-    if (stats.BestVolume !== undefined) {
-        updateParts.push("BestVolume = :bestVolume");
-        expressionAttributeValues[":bestVolume"] = stats.BestVolume;
-    }
-
-    if (stats.BestWeight !== undefined) {
-        updateParts.push("BestWeight = :bestWeight");
-        expressionAttributeValues[":bestWeight"] = stats.BestWeight;
-    }
-
-    if (stats.MaxReps !== undefined) {
-        updateParts.push("MaxReps = :maxReps");
-        expressionAttributeValues[":maxReps"] = stats.MaxReps;
-    }
-
-    await docClient.send(
-        new UpdateCommand({
-            TableName: tableName,
-            Key: {
-                UserId: userId,
-                SK: sortKey,
-            },
-            UpdateExpression: `SET ${updateParts.join(", ")}`,
-            ExpressionAttributeValues: expressionAttributeValues,
-        }),
-    );
+export type ExerciseStatsUpdate = {
+    Best1RM?: number;
+    BestVolume?: number;
+    BestWeight?: number;
+    MaxReps?: number;
 };
 
-export const updateGlobalStats = async (
+export async function getUserExerciseStats(userId: string, sortKey: string) {
+    return get(
+        {
+            pkName: "UserId",
+            pk: userId,
+            skName: "SK",
+            sk: sortKey,
+        },
+        USER_STATS_TABLE_NAME,
+    );
+}
+
+export async function updateExerciseStats(
+    userId: string,
+    sortKey: string,
+    stats: ExerciseStatsUpdate,
+) {
+    console.log(
+        `Updating exercise stats for user: ${userId}, sortKey: ${sortKey} in ${USER_STATS_TABLE_NAME}`,
+    );
+
+    await update(
+        {
+            pkName: "UserId",
+            pk: userId,
+            skName: "SK",
+            sk: sortKey,
+        },
+        stats,
+        USER_STATS_TABLE_NAME,
+    );
+}
+
+export async function updateGlobalStats(
     userId: string,
     totalVolume: number,
     totalReps: number,
-    tableName: string,
-) => {
-    console.log(`Updating global stats for user: ${userId} in ${tableName}`);
-
-    await docClient.send(
-        new UpdateCommand({
-            TableName: tableName,
-            Key: {
-                UserId: userId,
-                SK: "STAT#TOTAL",
-            },
-            UpdateExpression:
-                "ADD TotalWorkouts :inc, TotalVolume :volume, TotalReps :reps",
-            ExpressionAttributeValues: {
-                ":inc": 1,
-                ":volume": totalVolume,
-                ":reps": totalReps,
-            },
-        }),
+) {
+    console.log(
+        `Updating global stats for user: ${userId} in ${USER_STATS_TABLE_NAME}`,
     );
-};
+
+    await add(
+        {
+            pkName: "UserId",
+            pk: userId,
+            skName: "SK",
+            sk: "STAT#TOTAL",
+        },
+        {
+            TotalWorkouts: 1,
+            TotalVolume: totalVolume,
+            TotalReps: totalReps,
+        },
+        USER_STATS_TABLE_NAME,
+    );
+}

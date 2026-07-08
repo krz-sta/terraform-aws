@@ -1,17 +1,19 @@
-import { queryNoSk } from "../services/db-client.service.js";
+import { requireEnv } from "../helpers/env.helper.js";
+import { query } from "../services/db-client.service.js";
 
-const USER_STATS_TABLE_NAME: string | undefined =
-    process.env.USER_STATS_TABLE_NAME;
+const USER_STATS_TABLE_NAME = requireEnv("USER_STATS_TABLE_NAME");
 
-if (!USER_STATS_TABLE_NAME) {
-    throw new Error("Missing environment variable.");
-}
-
-export const getStatsLogic = async (userId: string) => {
+export async function getStatsLogic(userId: string) {
     console.log(
         `Querying stats for userId: ${userId} from table: ${USER_STATS_TABLE_NAME}`,
     );
-    const stats = await queryNoSk("UserId", userId, USER_STATS_TABLE_NAME);
+    const stats = await query(
+        {
+            pkName: "UserId",
+            pk: userId,
+        },
+        USER_STATS_TABLE_NAME,
+    );
 
     const result: {
         total: Record<string, object>;
@@ -35,4 +37,4 @@ export const getStatsLogic = async (userId: string) => {
     }
 
     return result;
-};
+}

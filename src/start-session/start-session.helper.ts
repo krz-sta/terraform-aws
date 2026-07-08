@@ -2,7 +2,7 @@ import crypto from "crypto";
 import { querySessionByUserId, startSession } from "./start-session.service.js";
 import { ConflictError } from "../helpers/error.helper.js";
 
-export const startSessionLogic = async (userId: string) => {
+export async function startSessionLogic(userId: string) {
     const existing = await querySessionByUserId(userId);
     if (existing) {
         throw new ConflictError("User already has an active session.", {
@@ -16,4 +16,4 @@ export const startSessionLogic = async (userId: string) => {
     await startSession(userId, sessionId, ttl);
 
     return sessionId;
-};
+}

@@ -1,19 +1,16 @@
-import { unmarshall } from "@aws-sdk/util-dynamodb";
-import { get } from "../services/db-client.service.js";
 import {
+    getUserExerciseStats,
     updateExerciseStats,
     updateGlobalStats,
 } from "./update-stats.service.js";
 import { SetData } from "../types/SetData.js";
-import { SQSEvent } from "aws-lambda/trigger/sqs.js";
 
-const USER_STATS_TABLE_NAME = process.env.USER_STATS_TABLE_NAME;
+export type SessionStatsInput = {
+    userId: string;
+    exercises: Record<string, any>;
+};
 
-if (!USER_STATS_TABLE_NAME) {
-    throw new Error("Missing environment variable.");
-}
-
-const normalizeSets = (exerciseData: any) => {
+function normalizeSets(exerciseData: any) {
     if (Array.isArray(exerciseData?.Sets)) {
         return exerciseData.Sets;
     }
@@ -23,17 +20,21 @@ const normalizeSets = (exerciseData: any) => {
     }
 
     return [];
-};
+}
 
-const getSetWeight = (set: SetData) => Number(set.Weight ?? set.weight ?? 0);
+function getSetWeight(set: SetData) {
+    return Number(set.Weight ?? set.weight ?? 0);
+}
 
-const getSetReps = (set: SetData) => Number(set.Reps ?? set.reps ?? 0);
+function getSetReps(set: SetData) {
+    return Number(set.Reps ?? set.reps ?? 0);
+}
 
-const processExercise = async (
+async function processExercise(
     userId: string,
     exerciseName: string,
     exerciseData: any,
-) => {
+) {
     let sessionVolume = 0;
     let sessionReps = 0;
     let sessionMaxReps = 0;
@@ -77,13 +78,7 @@ const processExercise = async (
     sessionBestVolume = Math.round(sessionBestVolume * 100) / 100;
     const sortKey = `EX#${exerciseName}`;
 
-    const existingStats = await get(
-        "UserId",
-        userId,
-        "SK",
-        sortKey,
-        USER_STATS_TABLE_NAME,
-    );
+    const existingStats = await getUserExerciseStats(userId, sortKey);
 
     const nextStats = hasWeightedSet
         ? {
@@ -101,56 +96,34 @@ const processExercise = async (
               MaxReps: Math.max(existingStats?.MaxReps || 0, sessionMaxReps),
           };
 
-    await updateExerciseStats(
-        userId,
-        sortKey,
-        nextStats,
-        USER_STATS_TABLE_NAME,
-    );
+    await updateExerciseStats(userId, sortKey, nextStats);
 
     return { exVolume: sessionVolume, exReps: sessionReps };
-};
+}
 
-export const calculateSessionStats = async (event: SQSEvent) => {
-    for (const record of event.Records) {
-        const sqsBody = JSON.parse(record.body);
-        const message = JSON.parse(sqsBody.Message);
-        const dbRecords = Array.isArray(message.Records)
-            ? message.Records
-            : [message];
+export async function calculateSessionStats(sessions: SessionStatsInput[]) {
+    for (const session of sessions) {
+        let globalVolume = 0;
+        let globalReps = 0;
+        const dbPromises = [];
 
-        for (const dbRecord of dbRecords) {
-            const sessionData = unmarshall(dbRecord.dynamodb.NewImage);
-            const userId = sessionData.UserId;
-            const exercises = sessionData.Exercises;
+        for (const [exerciseName, exerciseData] of Object.entries(
+            session.exercises,
+        )) {
+            const exerciseTask = processExercise(
+                session.userId,
+                exerciseName,
+                exerciseData,
+            ).then(({ exVolume, exReps }) => {
+                globalVolume += exVolume;
+                globalReps += exReps;
+            });
 
-            let globalVolume = 0;
-            let globalReps = 0;
-            const dbPromises = [];
-
-            for (const [exerciseName, exerciseData] of Object.entries(
-                exercises,
-            )) {
-                const exerciseTask = processExercise(
-                    userId,
-                    exerciseName,
-                    exerciseData,
-                ).then(({ exVolume, exReps }) => {
-                    globalVolume += exVolume;
-                    globalReps += exReps;
-                });
-
-                dbPromises.push(exerciseTask);
-            }
-
-            await Promise.all(dbPromises);
-
-            await updateGlobalStats(
-                userId,
-                globalVolume,
-                globalReps,
-                USER_STATS_TABLE_NAME,
-            );
+            dbPromises.push(exerciseTask);
         }
+
+        await Promise.all(dbPromises);
+
+        await updateGlobalStats(session.userId, globalVolume, globalReps);
     }
-};
+}
