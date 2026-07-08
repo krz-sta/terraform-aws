@@ -13,37 +13,8 @@ const schema = new ParquetSchema({
     StartTime: { type: "UTF8" },
     EndTime: { type: "UTF8" },
     TimeToExist: { type: "INT64" },
-    Exercises: {
-        repeated: true,
-        fields: {
-            name: { type: "UTF8" },
-            sets: {
-                repeated: true,
-                fields: {
-                    weight: { type: "DOUBLE" },
-                    reps: { type: "INT64" },
-                },
-            },
-        },
-    },
+    ExercisesJson: { type: "UTF8" },
 });
-
-const transformExercises = (exercisesObj: any) => {
-    const list: any[] = [];
-    if (exercisesObj && typeof exercisesObj === "object") {
-        for (const [name, data] of Object.entries(exercisesObj)) {
-            const sets = (data as any)?.sets || [];
-            list.push({
-                name,
-                sets: sets.map((s: any) => ({
-                    weight: s.weight,
-                    reps: s.reps,
-                })),
-            });
-        }
-    }
-    return list;
-};
 
 const collectWorkoutRecords = (event: SQSEvent) => {
     const workoutRecords: DynamoDBRecord[] = [];
@@ -101,7 +72,7 @@ export const archiveWorkoutSnapshots = async (event: SQSEvent) => {
                 StartTime: workout.StartTime,
                 EndTime: workout.EndTime,
                 TimeToExist: workout.TimeToExist,
-                Exercises: transformExercises(workout.Exercises),
+                ExercisesJson: JSON.stringify(workout.Exercises),
             });
             await writer.close();
 

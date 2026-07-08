@@ -66,3 +66,7 @@ resource "aws_dynamodb_table" "user_stats" {
     type = "S"
   }
 }
+
+resource "aws_s3_bucket" "glue_scripts" {
+  bucket_prefix = "glue-scripts"
+}

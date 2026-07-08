@@ -1,7 +1,7 @@
 data "aws_iam_policy_document" "sns_to_archive_sqs_policy" {
   statement {
-    effect  = "Allow"
-    actions = ["sqs:SendMessage"]
+    effect    = "Allow"
+    actions   = ["sqs:SendMessage"]
     resources = [aws_sqs_queue.archive.arn]
     principals {
       type        = "*"
@@ -17,8 +17,8 @@ data "aws_iam_policy_document" "sns_to_archive_sqs_policy" {
 
 data "aws_iam_policy_document" "sns_to_stats_sqs_policy" {
   statement {
-    effect  = "Allow"
-    actions = ["sqs:SendMessage"]
+    effect    = "Allow"
+    actions   = ["sqs:SendMessage"]
     resources = [aws_sqs_queue.stats.arn]
     principals {
       type        = "*"
@@ -44,16 +44,16 @@ data "aws_iam_policy_document" "pipe_iam" {
     resources = [var.ddb_session_history_stream_arn]
   }
   statement {
-    effect = "Allow"
-    actions = ["sns:Publish"]
+    effect    = "Allow"
+    actions   = ["sns:Publish"]
     resources = [aws_sns_topic.session_events.arn]
   }
 }
 
 data "aws_iam_policy_document" "archive_iam" {
   statement {
-    effect = "Allow"
-    actions = ["s3:PutObject"]
+    effect    = "Allow"
+    actions   = ["s3:PutObject"]
     resources = ["${var.s3_workouts_archive_bucket_arn}/*"]
   }
   statement {

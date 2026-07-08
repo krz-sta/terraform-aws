@@ -13,11 +13,16 @@ module "glue_iam" {
       {
         Action = [
           "s3:GetObject",
-          "s3:ListBucket"
+          "s3:ListBucket",
+          "s3:DeleteObject",
+          "s3:PutObject"
         ]
         Effect = "Allow"
         Resource = [
-          aws_s3_bucket.workouts_archive.arn, "${aws_s3_bucket.workouts_archive.arn}/*"
+          aws_s3_bucket.workouts_archive.arn, "${aws_s3_bucket.workouts_archive.arn}/*",
+          aws_s3_bucket.analytics_csv.arn, "${aws_s3_bucket.analytics_csv.arn}/*",
+          aws_s3_bucket.athena_results.arn, "${aws_s3_bucket.athena_results.arn}/*",
+          aws_s3_bucket.glue_scripts.arn, "${aws_s3_bucket.glue_scripts.arn}/*"
         ]
       }
     ]
@@ -34,9 +39,10 @@ resource "aws_glue_crawler" "workout_analytics_crawler" {
   name          = "${var.prefix}-analytics-crawler"
   database_name = aws_glue_catalog_database.workout_analytics.name
   role          = module.glue_iam.role_arn
+  table_prefix  = "workout_"
 
   s3_target {
-    path = "s3://${aws_s3_bucket.workouts_archive.bucket}"
+    path = "s3://${aws_s3_bucket.analytics_csv.bucket}/parquet-to-csv/"
   }
 
   schema_change_policy {
@@ -46,9 +52,15 @@ resource "aws_glue_crawler" "workout_analytics_crawler" {
 
   configuration = jsonencode({
     Version = 1.0
+    Grouping = {
+      TableGroupingPolicy = "CombineCompatibleSchemas"
+    }
     CrawlerOutput = {
       Partitions = {
         AddOrUpdateBehavior = "InheritFromTable"
+      }
+      Tables = {
+        AddOrUpdateBehavior = "MergeNewColumns"
       }
     }
   })
@@ -56,6 +68,11 @@ resource "aws_glue_crawler" "workout_analytics_crawler" {
 
 resource "aws_s3_bucket" "athena_results" {
   bucket_prefix = "${var.prefix}-athena-"
+}
+
+resource "aws_s3_bucket" "analytics_csv" {
+  bucket_prefix = "${var.prefix}-analytics-csv-"
+  force_destroy = true
 }
 
 resource "aws_athena_workgroup" "workout_analytics_workgroup" {
@@ -66,5 +83,32 @@ resource "aws_athena_workgroup" "workout_analytics_workgroup" {
     result_configuration {
       output_location = "s3://${aws_s3_bucket.athena_results.bucket}/"
     }
+  }
+}
+
+resource "aws_s3_object" "glue_script" {
+  bucket = aws_s3_bucket.glue_scripts.bucket
+  key    = "scripts/parquet-to-csv.py"
+  source = "${path.root}/../src/glue-jobs/parquet-to-csv.py"
+  etag   = filemd5("${path.root}/../src/glue-jobs/parquet-to-csv.py")
+}
+
+resource "aws_glue_job" "parquet_to_csv" {
+  name     = "convert-parquet-to-csv"
+  role_arn = module.glue_iam.role_arn
+
+  command {
+    script_location = "s3://${aws_s3_object.glue_script.bucket}/${aws_s3_object.glue_script.key}"
+    python_version  = "3"
+  }
+
+  glue_version      = "4.0"
+  worker_type       = "G.1X"
+  number_of_workers = 2
+
+  default_arguments = {
+    "--S3_INPUT_PATH"    = "s3://${aws_s3_bucket.workouts_archive.bucket}/"
+    "--S3_OUTPUT_PATH"   = "s3://${aws_s3_bucket.analytics_csv.bucket}/"
+    "--S3_OUTPUT_PREFIX" = "parquet-to-csv"
   }
 }
