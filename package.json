@@ -22,16 +22,17 @@
   "devDependencies": {
     "@aws-sdk/client-dynamodb": "3.1075.0",
     "@aws-sdk/lib-dynamodb": "3.1075.0",
+    "@types/aws-lambda": "^8.10.162",
     "archiver": "7.0.1",
     "esbuild": "0.28.1",
     "tsx": "4.22.4"
   },
   "dependencies": {
-    "@dsnp/parquetjs": "1.8.7",
-    "@types/json-schema": "7.0.15",
     "@aws-sdk/client-s3": "3.1077.0",
-    "@types/aws-lambda": "8.10.162",
+    "@dsnp/parquetjs": "1.8.7",
+    "@middy/core": "^7.7.0",
     "@types/jest": "30.0.0",
+    "@types/json-schema": "7.0.15",
     "@types/node": "26.1.0",
     "ajv": "8.20.0",
     "typescript": "6.0.3"

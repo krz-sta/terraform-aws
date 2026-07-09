@@ -6,28 +6,35 @@ const startTime = new Date();
 startTime.setMinutes(startTime.getMinutes() - 30);
 
 const sessionHistoryItem = {
-    UserId: "krzysztof123",
+    UserId: "anotheruser",
     SessionId: crypto.randomUUID(),
     Exercises: {
-        barbell_bench_press: {
+        incline_barbell_bench_press: {
             sets: [
                 { weight: 120, reps: 10 },
                 { weight: 120, reps: 8 },
                 { weight: 120, reps: 6 },
             ],
         },
-        deadlift: {
+        romanian_deadlift: {
             sets: [
                 { weight: 150, reps: 12 },
                 { weight: 160, reps: 10 },
                 { weight: 180, reps: 8 },
             ],
         },
-        "pull-up": {
+        chin_up: {
             sets: [
                 { weight: 0, reps: 10 },
                 { weight: 0, reps: 8 },
                 { weight: 0, reps: 6 },
+            ],
+        },
+        overhead_press: {
+            sets: [
+                { weight: 60, reps: 10 },
+                { weight: 70, reps: 8 },
+                { weight: 80, reps: 6 },
             ],
         },
     },
