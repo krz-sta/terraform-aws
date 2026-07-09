@@ -1,9 +1,13 @@
-import { APIGatewayProxyEvent } from "aws-lambda";
+import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { Http } from "../../shared/helpers/http.helper.js";
 import { deleteSetLogic } from "./delete-set.helper.js";
 import { deleteSetSchema } from "./delete-set.schema.js";
+import middy from "@middy/core";
+import httpJsonBodyParser from "@middy/http-json-body-parser";
 
-export const handler = async (event: APIGatewayProxyEvent) => {
+async function deleteSetHandler(
+    event: APIGatewayProxyEvent,
+): Promise<APIGatewayProxyResult> {
     const { errorResponse, data: body } = await Http.parseAndValidate(
         event,
         deleteSetSchema,
@@ -24,4 +28,8 @@ export const handler = async (event: APIGatewayProxyEvent) => {
     } catch (e) {
         return Http.error(e);
     }
-};
+}
+
+export const handler = middy<APIGatewayProxyEvent, APIGatewayProxyResult>()
+    .use(httpJsonBodyParser())
+    .handler(deleteSetHandler);

@@ -1,9 +1,13 @@
 import { addExerciseLogic } from "./add-exercise.helper.js";
 import { addExerciseSchema } from "./add-exercise.schema.js";
-import { APIGatewayProxyEvent } from "aws-lambda";
+import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { Http } from "../../shared/helpers/http.helper.js";
+import middy from "@middy/core";
+import httpJsonBodyParser from "@middy/http-json-body-parser";
 
-export const handler = async (event: APIGatewayProxyEvent) => {
+async function addExerciseHandler(
+    event: APIGatewayProxyEvent,
+): Promise<APIGatewayProxyResult> {
     const { errorResponse, data: body } = await Http.parseAndValidate(
         event,
         addExerciseSchema,
@@ -19,4 +23,8 @@ export const handler = async (event: APIGatewayProxyEvent) => {
     } catch (e) {
         return Http.error(e);
     }
-};
+}
+
+export const handler = middy<APIGatewayProxyEvent, APIGatewayProxyResult>()
+    .use(httpJsonBodyParser())
+    .handler(addExerciseHandler);

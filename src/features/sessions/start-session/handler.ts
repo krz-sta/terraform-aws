@@ -1,9 +1,13 @@
 import { Http } from "../../shared/helpers/http.helper.js";
-import { APIGatewayProxyEvent } from "aws-lambda";
+import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { startSessionLogic } from "./start-session.helper.js";
 import { startSessionSchema } from "./start-session.schema.js";
+import middy from "@middy/core";
+import httpJsonBodyParser from "@middy/http-json-body-parser";
 
-export const handler = async (event: APIGatewayProxyEvent) => {
+async function startSessionHandler(
+    event: APIGatewayProxyEvent,
+): Promise<APIGatewayProxyResult> {
     const { errorResponse, data: body } = await Http.parseAndValidate(
         event,
         startSessionSchema,
@@ -17,4 +21,8 @@ export const handler = async (event: APIGatewayProxyEvent) => {
     } catch (e) {
         return Http.error(e);
     }
-};
+}
+
+export const handler = middy<APIGatewayProxyEvent, APIGatewayProxyResult>()
+    .use(httpJsonBodyParser())
+    .handler(startSessionHandler);

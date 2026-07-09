@@ -43,16 +43,6 @@ export const Http = {
         };
     },
 
-    parseBody: function (body?: string | null): unknown {
-        if (!body) return null;
-
-        try {
-            return JSON.parse(body);
-        } catch (e) {
-            return null;
-        }
-    },
-
     validate: async function <T>(
         schema: JSONSchemaType<T>,
         data: unknown,
@@ -82,8 +72,7 @@ export const Http = {
                 ? { ...event.queryStringParameters }
                 : {};
         } else {
-            const rawBody = event.body ? event.body : undefined;
-            dataToValidate = Http.parseBody(rawBody);
+            dataToValidate = event.body as unknown;
         }
 
         const cognitoUserId =

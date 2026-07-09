@@ -1,9 +1,13 @@
 import { Http } from "../../shared/helpers/http.helper.js";
 import { addSetSchema } from "./add-set.schema.js";
 import { addSetLogic } from "./add-set.helper.js";
-import { APIGatewayProxyEvent } from "aws-lambda";
+import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
+import middy from "@middy/core";
+import httpJsonBodyParser from "@middy/http-json-body-parser";
 
-export const handler = async (event: APIGatewayProxyEvent) => {
+async function addSetHandler(
+    event: APIGatewayProxyEvent,
+): Promise<APIGatewayProxyResult> {
     const { errorResponse, data: body } = await Http.parseAndValidate(
         event,
         addSetSchema,
@@ -24,4 +28,8 @@ export const handler = async (event: APIGatewayProxyEvent) => {
     } catch (e) {
         return Http.error(e);
     }
-};
+}
+
+export const handler = middy<APIGatewayProxyEvent, APIGatewayProxyResult>()
+    .use(httpJsonBodyParser())
+    .handler(addSetHandler);
