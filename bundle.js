@@ -4,19 +4,19 @@ import { execSync } from "child_process";
 import archiver from "archiver";
 
 const entryPoints = [
-    "src/get-status/handler.ts",
-    "src/start-session/handler.ts",
-    "src/get-session/handler.ts",
-    "src/cancel-session/handler.ts",
-    "src/save-session/handler.ts",
-    "src/add-exercise/handler.ts",
-    "src/delete-exercise/handler.ts",
-    "src/add-set/handler.ts",
-    "src/delete-set/handler.ts",
-    "src/update-set/handler.ts",
-    "src/update-stats/handler.ts",
-    "src/archive-workout/handler.ts",
-    "src/get-stats/handler.ts",
+    "src/features/archive/archive-workout/handler.ts",
+    "src/features/exercises/add-exercise/handler.ts",
+    "src/features/exercises/delete-exercise/handler.ts",
+    "src/features/sessions/cancel-session/handler.ts",
+    "src/features/sessions/get-session/handler.ts",
+    "src/features/sessions/save-session/handler.ts",
+    "src/features/sessions/start-session/handler.ts",
+    "src/features/sets/add-set/handler.ts",
+    "src/features/sets/delete-set/handler.ts",
+    "src/features/sets/update-set/handler.ts",
+    "src/features/stats/get-stats/handler.ts",
+    "src/features/stats/update-stats/handler.ts",
+    "src/features/status/get-status/handler.ts",
 ];
 
 function zipDirectory(sourceDir, outputPath) {
@@ -40,7 +40,7 @@ async function runBuild() {
     fs.mkdirSync("dist/zip", { recursive: true });
 
     console.log("Copying node_modules...");
-    const layerDirectory = "src/layers/shared-libs-layer/nodejs";
+    const layerDirectory = "src/infrastructure/layers/shared-libs-layer/nodejs";
     fs.mkdirSync(layerDirectory, { recursive: true });
     fs.cpSync("package.json", `${layerDirectory}/package.json`);
     execSync("npm install --omit=dev", {
@@ -60,12 +60,12 @@ async function runBuild() {
 
     console.log("Creating zip files...");
     for (const entryPoint of entryPoints) {
-        const lambdaName = entryPoint.split("/")[1];
+        const lambdaName = entryPoint.split("/")[3];
         await zipDirectory(`dist/${lambdaName}`, `dist/zip/${lambdaName}.zip`);
     }
 
     await zipDirectory(
-        "src/layers/shared-libs-layer",
+        "src/infrastructure/layers/shared-libs-layer",
         "dist/zip/shared-libs-layer.zip",
     );
 
