@@ -1,4 +1,5 @@
 import { Http } from "../../shared/helpers/http.helper.js";
+import { errorHandler } from "../../shared/middleware/error.middleware.js";
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { updateSetLogic } from "./update-set.helper.js";
 import { updateSetSchema } from "./update-set.schema.js";
@@ -14,23 +15,20 @@ async function updateSetHandler(
     );
     if (errorResponse) return errorResponse;
 
-    try {
-        await updateSetLogic(
-            body.userId,
-            body.sessionId,
-            body.exerciseName,
-            body.setIndex,
-            body.setData,
-        );
+    await updateSetLogic(
+        body.userId,
+        body.sessionId,
+        body.exerciseName,
+        body.setIndex,
+        body.setData,
+    );
 
-        return Http.success(200, {
-            message: "Set updated successfully.",
-        });
-    } catch (e) {
-        return Http.error(e);
-    }
+    return Http.success(200, {
+        message: "Set updated successfully.",
+    });
 }
 
 export const handler = middy<APIGatewayProxyEvent, APIGatewayProxyResult>()
     .use(httpJsonBodyParser())
+    .use(errorHandler())
     .handler(updateSetHandler);

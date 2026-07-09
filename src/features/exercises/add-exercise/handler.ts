@@ -2,6 +2,7 @@ import { addExerciseLogic } from "./add-exercise.helper.js";
 import { addExerciseSchema } from "./add-exercise.schema.js";
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { Http } from "../../shared/helpers/http.helper.js";
+import { errorHandler } from "../../shared/middleware/error.middleware.js";
 import middy from "@middy/core";
 import httpJsonBodyParser from "@middy/http-json-body-parser";
 
@@ -14,17 +15,14 @@ async function addExerciseHandler(
     );
     if (errorResponse) return errorResponse;
 
-    try {
-        await addExerciseLogic(body.userId, body.sessionId, body.exerciseName);
+    await addExerciseLogic(body.userId, body.sessionId, body.exerciseName);
 
-        return Http.success(200, {
-            message: "Exercise added successfully.",
-        });
-    } catch (e) {
-        return Http.error(e);
-    }
+    return Http.success(200, {
+        message: "Exercise added successfully.",
+    });
 }
 
 export const handler = middy<APIGatewayProxyEvent, APIGatewayProxyResult>()
     .use(httpJsonBodyParser())
+    .use(errorHandler())
     .handler(addExerciseHandler);

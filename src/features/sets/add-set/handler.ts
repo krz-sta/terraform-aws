@@ -1,4 +1,5 @@
 import { Http } from "../../shared/helpers/http.helper.js";
+import { errorHandler } from "../../shared/middleware/error.middleware.js";
 import { addSetSchema } from "./add-set.schema.js";
 import { addSetLogic } from "./add-set.helper.js";
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
@@ -14,22 +15,19 @@ async function addSetHandler(
     );
     if (errorResponse) return errorResponse;
 
-    try {
-        await addSetLogic(
-            body.userId,
-            body.sessionId,
-            body.exerciseName,
-            body.setData,
-        );
+    await addSetLogic(
+        body.userId,
+        body.sessionId,
+        body.exerciseName,
+        body.setData,
+    );
 
-        return Http.success(200, {
-            message: "Set added successfully.",
-        });
-    } catch (e) {
-        return Http.error(e);
-    }
+    return Http.success(200, {
+        message: "Set added successfully.",
+    });
 }
 
 export const handler = middy<APIGatewayProxyEvent, APIGatewayProxyResult>()
     .use(httpJsonBodyParser())
+    .use(errorHandler())
     .handler(addSetHandler);

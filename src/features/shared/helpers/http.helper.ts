@@ -1,6 +1,5 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { Ajv, ErrorObject, JSONSchemaType } from "ajv";
-import { AppError } from "./error.helper.js";
 
 const ajv = new Ajv();
 
@@ -16,30 +15,6 @@ export const Http = {
         return {
             statusCode: statusCode,
             body: JSON.stringify(payload),
-        };
-    },
-
-    error: function (error: unknown): APIGatewayProxyResult {
-        if (error instanceof AppError) {
-            const responseBody: { message: string; details?: unknown } = {
-                message: error.message,
-            };
-
-            if (error.data !== undefined) responseBody.details = error.data;
-
-            return {
-                statusCode: error.statusCode,
-                body: JSON.stringify(responseBody),
-            };
-        }
-
-        console.error("Unhandled error:", error);
-
-        return {
-            statusCode: 500,
-            body: JSON.stringify({
-                message: "Unhandled server error.",
-            }),
         };
     },
 

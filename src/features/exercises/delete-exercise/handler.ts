@@ -1,5 +1,6 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { Http } from "../../shared/helpers/http.helper.js";
+import { errorHandler } from "../../shared/middleware/error.middleware.js";
 import { deleteExerciseLogic } from "./delete-exercise.helper.js";
 import { deleteExerciseSchema } from "./delete-exercise.schema.js";
 import middy from "@middy/core";
@@ -14,21 +15,14 @@ async function deleteExerciseHandler(
     );
     if (errorResponse) return errorResponse;
 
-    try {
-        await deleteExerciseLogic(
-            body.userId,
-            body.sessionId,
-            body.exerciseName,
-        );
+    await deleteExerciseLogic(body.userId, body.sessionId, body.exerciseName);
 
-        return Http.success(200, {
-            message: "Exercise deleted successfully.",
-        });
-    } catch (e) {
-        return Http.error(e);
-    }
+    return Http.success(200, {
+        message: "Exercise deleted successfully.",
+    });
 }
 
 export const handler = middy<APIGatewayProxyEvent, APIGatewayProxyResult>()
     .use(httpJsonBodyParser())
+    .use(errorHandler())
     .handler(deleteExerciseHandler);
