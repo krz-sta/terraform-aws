@@ -11,7 +11,7 @@ export type ParsedRequest<T> =
 export const Http = {
     success: function (
         statusCode: number,
-        payload: any,
+        payload: unknown,
     ): APIGatewayProxyResult {
         return {
             statusCode: statusCode,
@@ -19,9 +19,9 @@ export const Http = {
         };
     },
 
-    error: function (error: any): APIGatewayProxyResult {
+    error: function (error: unknown): APIGatewayProxyResult {
         if (error instanceof AppError) {
-            const responseBody: any = {
+            const responseBody: { message: string; details?: unknown } = {
                 message: error.message,
             };
 
@@ -94,7 +94,10 @@ export const Http = {
             typeof dataToValidate === "object" &&
             cognitoUserId
         ) {
-            (dataToValidate as any).userId = cognitoUserId;
+            dataToValidate = {
+                ...(dataToValidate as Record<string, unknown>),
+                userId: cognitoUserId,
+            };
         }
 
         const validationErrors = await Http.validate(schema, dataToValidate);

@@ -1,6 +1,7 @@
 import { NotFoundError } from "../helpers/error.helper.js";
 import { requireEnv } from "../helpers/env.helper.js";
 import { update, get } from "../services/db-client.service.js";
+import { ActiveSessionItem } from "../types/workout.js";
 
 const ACTIVE_SESSIONS_TABLE_NAME = requireEnv("ACTIVE_SESSIONS_TABLE_NAME");
 
@@ -10,7 +11,7 @@ export async function deleteSetLogic(
     exerciseName: string,
     setIndex: number,
 ) {
-    const session = await get(
+    const session = await get<ActiveSessionItem>(
         {
             pkName: "UserId",
             pk: userId,
@@ -24,16 +25,16 @@ export async function deleteSetLogic(
         throw new NotFoundError("Session not found.");
     }
 
-    let updatedExercises = session.Exercises || {};
+    const updatedExercises = session.Exercises || {};
 
-    if (
-        !updatedExercises[exerciseName] ||
-        !updatedExercises[exerciseName].Sets[setIndex]
-    ) {
+    const exercise = updatedExercises[exerciseName];
+    const sets = exercise?.Sets;
+
+    if (!sets || setIndex < 0 || setIndex >= sets.length) {
         throw new NotFoundError("Set not found.");
     }
 
-    delete updatedExercises[exerciseName].Sets[setIndex];
+    sets.splice(setIndex, 1);
 
     await update(
         {

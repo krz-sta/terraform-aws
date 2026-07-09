@@ -4,20 +4,53 @@ import { SQSEvent } from "aws-lambda/trigger/sqs.js";
 import { archiveWorkoutSnapshots } from "./archive-workout.helper.js";
 import { WorkoutSnapshot } from "./archive-workout.service.js";
 
+type DynamoDbRecord = {
+    dynamodb?: {
+        NewImage?: Record<string, AttributeValue>;
+    };
+};
+
+function parseJson(value: string): unknown {
+    try {
+        return JSON.parse(value);
+    } catch {
+        return null;
+    }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+    return value !== null && typeof value === "object";
+}
+
+function getDbRecords(payload: unknown): DynamoDbRecord[] {
+    if (!isRecord(payload)) {
+        return [];
+    }
+
+    const recordsCandidate = payload.Records;
+    if (Array.isArray(recordsCandidate)) {
+        return recordsCandidate as DynamoDbRecord[];
+    }
+
+    return [payload as DynamoDbRecord];
+}
+
 const collectWorkoutSnapshots = (event: SQSEvent): WorkoutSnapshot[] => {
     const snapshots = [];
 
     for (const record of event.Records ?? []) {
-        const sqsMessage = JSON.parse(record.body);
-        const snsMessage =
-            typeof sqsMessage.Message === "string"
-                ? JSON.parse(sqsMessage.Message)
-                : sqsMessage.Message;
-        const dbRecords = Array.isArray(snsMessage?.Records)
-            ? snsMessage.Records
-            : snsMessage
-              ? [snsMessage]
-              : [];
+        const sqsMessage = parseJson(record.body);
+
+        let snsMessage: unknown = sqsMessage;
+        if (isRecord(sqsMessage) && "Message" in sqsMessage) {
+            const nestedMessage = sqsMessage.Message;
+            snsMessage =
+                typeof nestedMessage === "string"
+                    ? parseJson(nestedMessage)
+                    : nestedMessage;
+        }
+
+        const dbRecords = getDbRecords(snsMessage);
 
         for (const dbRecord of dbRecords) {
             const newImage = dbRecord?.dynamodb?.NewImage;
@@ -25,10 +58,14 @@ const collectWorkoutSnapshots = (event: SQSEvent): WorkoutSnapshot[] => {
                 continue;
             }
 
-            const workout = unmarshall(
-                newImage as Record<string, AttributeValue>,
-            );
-            if (!workout?.UserId || !workout?.SessionId) {
+            const workout = unmarshall(newImage) as Partial<WorkoutSnapshot>;
+            if (
+                !workout.UserId ||
+                !workout.SessionId ||
+                typeof workout.StartTime !== "string" ||
+                typeof workout.EndTime !== "string" ||
+                typeof workout.TimeToExist !== "number"
+            ) {
                 continue;
             }
 

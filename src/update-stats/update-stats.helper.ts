@@ -1,16 +1,25 @@
-import {
-    getUserExerciseStats,
-    updateExerciseStats,
-    updateGlobalStats,
-} from "./update-stats.service.js";
-import { SetData } from "../types/SetData.js";
+import { add, get, update } from "../services/db-client.service.js";
+import { SetData, UserStatItem } from "../types/workout.js";
+import { requireEnv } from "../helpers/env.helper.js";
+
+const USER_STATS_TABLE_NAME = requireEnv("USER_STATS_TABLE_NAME");
+
+type SetLike = Partial<SetData> & {
+    Weight?: number;
+    Reps?: number;
+};
+
+type ExerciseData = {
+    Sets?: SetLike[];
+    sets?: SetLike[];
+};
 
 export type SessionStatsInput = {
     userId: string;
-    exercises: Record<string, any>;
+    exercises: Record<string, ExerciseData>;
 };
 
-function normalizeSets(exerciseData: any) {
+function normalizeSets(exerciseData: ExerciseData): SetLike[] {
     if (Array.isArray(exerciseData?.Sets)) {
         return exerciseData.Sets;
     }
@@ -22,18 +31,26 @@ function normalizeSets(exerciseData: any) {
     return [];
 }
 
-function getSetWeight(set: SetData) {
+function getSetWeight(set: SetLike) {
     return Number(set.Weight ?? set.weight ?? 0);
 }
 
-function getSetReps(set: SetData) {
+function getSetReps(set: SetLike) {
     return Number(set.Reps ?? set.reps ?? 0);
+}
+
+function getNumericStat(
+    stats: Record<string, unknown> | null,
+    key: string,
+): number {
+    const value = stats?.[key];
+    return typeof value === "number" ? value : 0;
 }
 
 async function processExercise(
     userId: string,
     exerciseName: string,
-    exerciseData: any,
+    exerciseData: ExerciseData,
 ) {
     let sessionVolume = 0;
     let sessionReps = 0;
@@ -78,25 +95,48 @@ async function processExercise(
     sessionBestVolume = Math.round(sessionBestVolume * 100) / 100;
     const sortKey = `EX#${exerciseName}`;
 
-    const existingStats = await getUserExerciseStats(userId, sortKey);
+    const existingStats = await get<UserStatItem>(
+        {
+            pkName: "UserId",
+            pk: userId,
+            skName: "SK",
+            sk: sortKey,
+        },
+        USER_STATS_TABLE_NAME,
+    );
 
     const nextStats = hasWeightedSet
         ? {
-              Best1RM: Math.max(existingStats?.Best1RM || 0, sessionBest1RM),
+              Best1RM: Math.max(
+                  getNumericStat(existingStats, "Best1RM"),
+                  sessionBest1RM,
+              ),
               BestVolume: Math.max(
-                  existingStats?.BestVolume || 0,
+                  getNumericStat(existingStats, "BestVolume"),
                   sessionBestVolume,
               ),
               BestWeight: Math.max(
-                  existingStats?.BestWeight || 0,
+                  getNumericStat(existingStats, "BestWeight"),
                   sessionBestWeight,
               ),
           }
         : {
-              MaxReps: Math.max(existingStats?.MaxReps || 0, sessionMaxReps),
+              MaxReps: Math.max(
+                  getNumericStat(existingStats, "MaxReps"),
+                  sessionMaxReps,
+              ),
           };
 
-    await updateExerciseStats(userId, sortKey, nextStats);
+    await update(
+        {
+            pkName: "UserId",
+            pk: userId,
+            skName: "SK",
+            sk: sortKey,
+        },
+        nextStats,
+        USER_STATS_TABLE_NAME,
+    );
 
     return { exVolume: sessionVolume, exReps: sessionReps };
 }
@@ -124,6 +164,19 @@ export async function calculateSessionStats(sessions: SessionStatsInput[]) {
 
         await Promise.all(dbPromises);
 
-        await updateGlobalStats(session.userId, globalVolume, globalReps);
+        await add(
+            {
+                pkName: "UserId",
+                pk: session.userId,
+                skName: "SK",
+                sk: "STAT#TOTAL",
+            },
+            {
+                TotalWorkouts: 1,
+                TotalVolume: globalVolume,
+                TotalReps: globalReps,
+            },
+            USER_STATS_TABLE_NAME,
+        );
     }
 }

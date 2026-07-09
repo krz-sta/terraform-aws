@@ -2,11 +2,12 @@ import { saveSession } from "./save-session.service.js";
 import { requireEnv } from "../helpers/env.helper.js";
 import { get } from "../services/db-client.service.js";
 import { NotFoundError } from "../helpers/error.helper.js";
+import { ActiveSessionItem, SessionHistoryItem } from "../types/workout.js";
 
 const ACTIVE_SESSIONS_TABLE_NAME = requireEnv("ACTIVE_SESSIONS_TABLE_NAME");
 
 export async function saveSessionLogic(userId: string, sessionId: string) {
-    const session = await get(
+    const session = await get<ActiveSessionItem>(
         {
             pkName: "UserId",
             pk: userId,
@@ -21,7 +22,7 @@ export async function saveSessionLogic(userId: string, sessionId: string) {
     }
 
     const endTime = new Date().toISOString();
-    const sessionHistoryItem = {
+    const sessionHistoryItem: SessionHistoryItem = {
         UserId: userId,
         SessionId: sessionId,
         Exercises: session.Exercises || {},

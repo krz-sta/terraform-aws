@@ -35,7 +35,9 @@ function buildKey(key: DbKey) {
     return normalizedKey;
 }
 
-export async function get(key: DbKey, tableName: string) {
+export async function get<
+    T extends Record<string, unknown> = Record<string, unknown>,
+>(key: DbKey, tableName: string) {
     console.log(`Getting item from ${tableName}: ${JSON.stringify(key)}`);
     const result = await docClient.send(
         new GetCommand({
@@ -44,7 +46,7 @@ export async function get(key: DbKey, tableName: string) {
         }),
     );
     console.log(`Result from get: ${JSON.stringify(result.Item, null, 2)}`);
-    return result.Item || null;
+    return (result.Item as T | undefined) || null;
 }
 
 export async function put(item: Record<string, unknown>, tableName: string) {
@@ -146,7 +148,9 @@ async function deleteFn(key: DbKey, tableName: string) {
 
 export { deleteFn as delete };
 
-export async function query(
+export async function query<
+    T extends Record<string, unknown> = Record<string, unknown>,
+>(
     key: DbKey,
     tableName: string,
     options?: {
@@ -181,7 +185,7 @@ export async function query(
         }),
     );
 
-    return result.Items || [];
+    return (result.Items as T[] | undefined) || [];
 }
 
 export async function transactWrite(
