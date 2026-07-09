@@ -2,6 +2,7 @@ import esbuild from "esbuild";
 import fs from "fs";
 import { execSync } from "child_process";
 import archiver from "archiver";
+import path from "path";
 
 const entryPoints = [
     "src/features/archive/archive-workout/handler.ts",
@@ -54,14 +55,19 @@ async function runBuild() {
         minify: true,
         platform: "node",
         target: "node24",
+        format: "esm",
         outdir: "dist",
-        external: ["@aws-sdk/*", "ajv", "@dsnp/parquetjs"],
+        outExtension: { ".js": ".mjs" },
+        external: ["@aws-sdk/*", "ajv", "@dsnp/parquetjs", "@middy/*"],
     });
 
     console.log("Creating zip files...");
     for (const entryPoint of entryPoints) {
         const lambdaName = entryPoint.split("/")[3];
-        await zipDirectory(`dist/${lambdaName}`, `dist/zip/${lambdaName}.zip`);
+        await zipDirectory(
+            `${path.dirname(entryPoint).replace("src/features", "dist")}`,
+            `dist/zip/${lambdaName}.zip`,
+        );
     }
 
     await zipDirectory(

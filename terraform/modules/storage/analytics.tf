@@ -89,8 +89,8 @@ resource "aws_athena_workgroup" "workout_analytics_workgroup" {
 resource "aws_s3_object" "glue_script" {
   bucket = aws_s3_bucket.glue_scripts.bucket
   key    = "scripts/parquet-to-csv.py"
-  source = "${path.root}/../src/glue-jobs/parquet-to-csv.py"
-  etag   = filemd5("${path.root}/../src/glue-jobs/parquet-to-csv.py")
+  source = "${path.root}/../src/infrastructure/glue-jobs/parquet-to-csv.py"
+  etag   = filemd5("${path.root}/../src/infrastructure/glue-jobs/parquet-to-csv.py")
 }
 
 resource "aws_glue_job" "parquet_to_csv" {
