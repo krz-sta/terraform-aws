@@ -5,7 +5,6 @@ import { logger } from "../../shared/middleware/logger.middleware.js";
 import { getSessionLogic } from "./get-session.helper.js";
 import { getSessionSchema } from "./get-session.schema.js";
 import middy from "@middy/core";
-import httpJsonBodyParser from "@middy/http-json-body-parser";
 
 async function getSessionHandler(
     event: APIGatewayProxyEvent,
@@ -23,6 +22,5 @@ async function getSessionHandler(
 
 export const handler = middy<APIGatewayProxyEvent, APIGatewayProxyResult>()
     .use(logger())
-    .use(httpJsonBodyParser())
     .use(errorHandler())
     .handler(getSessionHandler);
