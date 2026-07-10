@@ -1,8 +1,26 @@
+import { AttributeValue } from "@aws-sdk/client-dynamodb";
+import { unmarshall } from "@aws-sdk/util-dynamodb";
+import { SQSEvent, SQSRecord } from "aws-lambda";
 import { add, get, update } from "../../shared/services/db-client.service.js";
-import { SetData, UserStatItem } from "../../shared/types/workout.js";
+import {
+    ExercisesMap,
+    SetData,
+    UserStatItem,
+} from "../../shared/types/workout.js";
 import { requireEnv } from "../../shared/helpers/env.helper.js";
 
 const USER_STATS_TABLE_NAME = requireEnv("USER_STATS_TABLE_NAME");
+
+type DynamoDbRecord = {
+    dynamodb?: {
+        NewImage?: Record<string, AttributeValue>;
+    };
+};
+
+type ParsedSessionData = {
+    UserId: string;
+    Exercises: ExercisesMap;
+};
 
 type SetLike = Partial<SetData> & {
     Weight?: number;
@@ -18,6 +36,91 @@ export type SessionStatsInput = {
     userId: string;
     exercises: Record<string, ExerciseData>;
 };
+
+function parseJson(value: string): unknown {
+    try {
+        return JSON.parse(value);
+    } catch {
+        return null;
+    }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+    return value !== null && typeof value === "object";
+}
+
+function hasRecordsProperty(
+    value: Record<string, unknown>,
+): value is { Records: unknown[] } {
+    return "Records" in value && Array.isArray(value.Records);
+}
+
+function isDynamoDbRecord(value: unknown): value is DynamoDbRecord {
+    if (!isRecord(value)) return false;
+    if (!("dynamodb" in value)) return true;
+
+    const dynamodb = value.dynamodb;
+    if (!isRecord(dynamodb)) return false;
+    if (!("NewImage" in dynamodb)) return true;
+
+    return isRecord(dynamodb.NewImage);
+}
+
+function getDbRecords(payload: unknown): DynamoDbRecord[] {
+    if (!isRecord(payload)) return [];
+
+    if (hasRecordsProperty(payload)) {
+        return payload.Records.filter(isDynamoDbRecord);
+    }
+
+    return isDynamoDbRecord(payload) ? [payload] : [];
+}
+
+function unwrapSnsMessage(sqsBody: unknown): unknown {
+    if (!isRecord(sqsBody) || !("Message" in sqsBody)) {
+        return sqsBody;
+    }
+
+    const nestedMessage = sqsBody.Message;
+    return typeof nestedMessage === "string"
+        ? parseJson(nestedMessage)
+        : nestedMessage;
+}
+
+function isParsedSessionData(value: unknown): value is ParsedSessionData {
+    return (
+        isRecord(value) &&
+        typeof value.UserId === "string" &&
+        isRecord(value.Exercises)
+    );
+}
+
+function parseDbRecords(record: SQSRecord): DynamoDbRecord[] {
+    const sqsBody = parseJson(record.body);
+    const message = unwrapSnsMessage(sqsBody);
+    return getDbRecords(message);
+}
+
+export function buildSessionsForStats(event: SQSEvent): SessionStatsInput[] {
+    const sessions: SessionStatsInput[] = [];
+
+    for (const record of event.Records ?? []) {
+        for (const dbRecord of parseDbRecords(record)) {
+            const newImage = dbRecord.dynamodb?.NewImage;
+            if (!newImage) continue;
+
+            const sessionData = unmarshall(newImage);
+            if (!isParsedSessionData(sessionData)) continue;
+
+            sessions.push({
+                userId: sessionData.UserId,
+                exercises: sessionData.Exercises,
+            });
+        }
+    }
+
+    return sessions;
+}
 
 function normalizeSets(exerciseData: ExerciseData): SetLike[] {
     if (Array.isArray(exerciseData?.Sets)) {

@@ -1,4 +1,4 @@
-import { docClient } from "./src/helpers/db-client.helper";
+import { docClient } from "./src/features/shared/helpers/db-client.helper";
 import { PutCommand } from "@aws-sdk/lib-dynamodb";
 import crypto from "crypto";
 
