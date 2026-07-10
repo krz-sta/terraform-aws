@@ -1,8 +1,4 @@
-import {
-    APIGatewayProxyEvent,
-    APIGatewayProxyResult,
-    Context,
-} from "aws-lambda";
+import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 
 function safeJsonParse(value: string): unknown {
     try {
@@ -14,24 +10,16 @@ function safeJsonParse(value: string): unknown {
 
 export function logger() {
     return {
-        before: function (request: {
-            event: APIGatewayProxyEvent;
-            context: Context;
-        }): void {
+        before: function (request: { event: APIGatewayProxyEvent }): void {
             console.log("REQUEST", {
-                requestId: request.context.awsRequestId,
                 httpMethod: request.event.httpMethod,
                 path: request.event.path,
                 queryStringParameters: request.event.queryStringParameters,
                 body: request.event.body,
             });
         },
-        after: function (request: {
-            response?: APIGatewayProxyResult;
-            context: Context;
-        }): void {
+        after: function (request: { response?: APIGatewayProxyResult }): void {
             console.log("RESPONSE", {
-                requestId: request.context.awsRequestId,
                 statusCode: request.response?.statusCode,
                 body:
                     typeof request.response?.body === "string"
@@ -39,12 +27,8 @@ export function logger() {
                         : request.response?.body,
             });
         },
-        onError: function (request: {
-            error: unknown;
-            context: Context;
-        }): void {
+        onError: function (request: { error: unknown }): void {
             console.log("ERROR", {
-                requestId: request.context.awsRequestId,
                 error: request.error,
             });
         },

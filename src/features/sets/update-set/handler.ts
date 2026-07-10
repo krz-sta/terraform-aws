@@ -1,36 +1,39 @@
-import { Http } from "../../shared/helpers/http.helper.js";
+import { APIGatewayProxyResult } from "aws-lambda";
 import { errorHandler } from "../../shared/middleware/error.middleware.js";
 import { logger } from "../../shared/middleware/logger.middleware.js";
-import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
+import {
+    validateRequest,
+    ValidatedEvent,
+} from "../../shared/middleware/validation.middleware.js";
+import middy from "@middy/core";
+import { parser } from "../../shared/middleware/parser.middleware.js";
 import { updateSetLogic } from "./update-set.helper.js";
 import { updateSetSchema } from "./update-set.schema.js";
-import middy from "@middy/core";
-import httpJsonBodyParser from "@middy/http-json-body-parser";
+import { UpdateSetRequest } from "../../shared/types/requests.js";
 
 async function updateSetHandler(
-    event: APIGatewayProxyEvent,
+    event: ValidatedEvent<UpdateSetRequest>,
 ): Promise<APIGatewayProxyResult> {
-    const { errorResponse, data: body } = await Http.parseAndValidate(
-        event,
-        updateSetSchema,
-    );
-    if (errorResponse) return errorResponse;
-
     await updateSetLogic(
-        body.userId,
-        body.sessionId,
-        body.exerciseName,
-        body.setIndex,
-        body.setData,
+        event.validatedBody.userId,
+        event.validatedBody.sessionId,
+        event.validatedBody.exerciseName,
+        event.validatedBody.setIndex,
+        event.validatedBody.setData,
     );
 
-    return Http.success(200, {
-        message: "Set updated successfully.",
-    });
+    return {
+        statusCode: 200,
+        body: JSON.stringify({ message: "Set updated successfully." }),
+    };
 }
 
-export const handler = middy<APIGatewayProxyEvent, APIGatewayProxyResult>()
+export const handler = middy<
+    ValidatedEvent<UpdateSetRequest>,
+    APIGatewayProxyResult
+>()
     .use(logger())
-    .use(httpJsonBodyParser())
+    .use(parser())
+    .use(validateRequest(updateSetSchema))
     .use(errorHandler())
     .handler(updateSetHandler);

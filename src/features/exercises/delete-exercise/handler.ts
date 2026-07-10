@@ -1,30 +1,37 @@
-import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
-import { Http } from "../../shared/helpers/http.helper.js";
+import { APIGatewayProxyResult } from "aws-lambda";
 import { errorHandler } from "../../shared/middleware/error.middleware.js";
 import { logger } from "../../shared/middleware/logger.middleware.js";
+import {
+    validateRequest,
+    ValidatedEvent,
+} from "../../shared/middleware/validation.middleware.js";
+import middy from "@middy/core";
+import { parser } from "../../shared/middleware/parser.middleware.js";
 import { deleteExerciseLogic } from "./delete-exercise.helper.js";
 import { deleteExerciseSchema } from "./delete-exercise.schema.js";
-import middy from "@middy/core";
-import httpJsonBodyParser from "@middy/http-json-body-parser";
+import { DeleteExerciseRequest } from "../../shared/types/requests.js";
 
 async function deleteExerciseHandler(
-    event: APIGatewayProxyEvent,
+    event: ValidatedEvent<DeleteExerciseRequest>,
 ): Promise<APIGatewayProxyResult> {
-    const { errorResponse, data: body } = await Http.parseAndValidate(
-        event,
-        deleteExerciseSchema,
+    await deleteExerciseLogic(
+        event.validatedBody.userId,
+        event.validatedBody.sessionId,
+        event.validatedBody.exerciseName,
     );
-    if (errorResponse) return errorResponse;
 
-    await deleteExerciseLogic(body.userId, body.sessionId, body.exerciseName);
-
-    return Http.success(200, {
-        message: "Exercise deleted successfully.",
-    });
+    return {
+        statusCode: 200,
+        body: JSON.stringify({ message: "Exercise deleted successfully." }),
+    };
 }
 
-export const handler = middy<APIGatewayProxyEvent, APIGatewayProxyResult>()
+export const handler = middy<
+    ValidatedEvent<DeleteExerciseRequest>,
+    APIGatewayProxyResult
+>()
     .use(logger())
-    .use(httpJsonBodyParser())
+    .use(parser())
+    .use(validateRequest(deleteExerciseSchema))
     .use(errorHandler())
     .handler(deleteExerciseHandler);

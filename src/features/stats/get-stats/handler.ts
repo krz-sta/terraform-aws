@@ -1,28 +1,31 @@
-import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
-import { Http } from "../../shared/helpers/http.helper.js";
+import { APIGatewayProxyResult } from "aws-lambda";
 import { errorHandler } from "../../shared/middleware/error.middleware.js";
 import { logger } from "../../shared/middleware/logger.middleware.js";
+import {
+    validateRequest,
+    ValidatedEvent,
+} from "../../shared/middleware/validation.middleware.js";
+import middy from "@middy/core";
 import { getStatsLogic } from "./get-stats.helper.js";
 import { getStatsSchema } from "./get-stats.schema.js";
-import middy from "@middy/core";
-import httpJsonBodyParser from "@middy/http-json-body-parser";
+import { GetStatsRequest } from "../../shared/types/requests.js";
 
 async function getStatsHandler(
-    event: APIGatewayProxyEvent,
+    event: ValidatedEvent<GetStatsRequest>,
 ): Promise<APIGatewayProxyResult> {
-    const { errorResponse, data: body } = await Http.parseAndValidate(
-        event,
-        getStatsSchema,
-    );
-    if (errorResponse) return errorResponse;
+    const statsData = await getStatsLogic(event.validatedBody.userId);
 
-    const statsData = await getStatsLogic(body.userId);
-
-    return Http.success(200, statsData);
+    return {
+        statusCode: 200,
+        body: JSON.stringify(statsData),
+    };
 }
 
-export const handler = middy<APIGatewayProxyEvent, APIGatewayProxyResult>()
+export const handler = middy<
+    ValidatedEvent<GetStatsRequest>,
+    APIGatewayProxyResult
+>()
     .use(logger())
-    .use(httpJsonBodyParser())
+    .use(validateRequest(getStatsSchema))
     .use(errorHandler())
     .handler(getStatsHandler);

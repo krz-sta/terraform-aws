@@ -1,30 +1,34 @@
-import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
-import { Http } from "../../shared/helpers/http.helper.js";
+import { APIGatewayProxyResult } from "aws-lambda";
 import { errorHandler } from "../../shared/middleware/error.middleware.js";
 import { logger } from "../../shared/middleware/logger.middleware.js";
+import {
+    validateRequest,
+    ValidatedEvent,
+} from "../../shared/middleware/validation.middleware.js";
+import middy from "@middy/core";
 import { cancelSessionLogic } from "./cancel-session.helper.js";
 import { cancelSessionSchema } from "./cancel-session.schema.js";
-import middy from "@middy/core";
-import httpJsonBodyParser from "@middy/http-json-body-parser";
+import { CancelSessionRequest } from "../../shared/types/requests.js";
 
 async function cancelSessionHandler(
-    event: APIGatewayProxyEvent,
+    event: ValidatedEvent<CancelSessionRequest>,
 ): Promise<APIGatewayProxyResult> {
-    const { errorResponse, data: body } = await Http.parseAndValidate(
-        event,
-        cancelSessionSchema,
+    await cancelSessionLogic(
+        event.validatedBody.userId,
+        event.validatedBody.sessionId,
     );
-    if (errorResponse) return errorResponse;
 
-    await cancelSessionLogic(body.userId, body.sessionId);
-
-    return Http.success(200, {
-        message: "Session canceled successfully.",
-    });
+    return {
+        statusCode: 200,
+        body: JSON.stringify({ message: "Session canceled successfully." }),
+    };
 }
 
-export const handler = middy<APIGatewayProxyEvent, APIGatewayProxyResult>()
+export const handler = middy<
+    ValidatedEvent<CancelSessionRequest>,
+    APIGatewayProxyResult
+>()
     .use(logger())
-    .use(httpJsonBodyParser())
+    .use(validateRequest(cancelSessionSchema))
     .use(errorHandler())
     .handler(cancelSessionHandler);

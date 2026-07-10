@@ -1,30 +1,36 @@
-import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
-import { Http } from "../../shared/helpers/http.helper.js";
+import { APIGatewayProxyResult } from "aws-lambda";
 import { errorHandler } from "../../shared/middleware/error.middleware.js";
 import { logger } from "../../shared/middleware/logger.middleware.js";
+import {
+    validateRequest,
+    ValidatedEvent,
+} from "../../shared/middleware/validation.middleware.js";
+import middy from "@middy/core";
 import { saveSessionLogic } from "./save-session.helper.js";
 import { saveSessionSchema } from "./save-session.schema.js";
-import middy from "@middy/core";
-import httpJsonBodyParser from "@middy/http-json-body-parser";
+import { SaveSessionRequest } from "../../shared/types/requests.js";
 
 async function saveSessionHandler(
-    event: APIGatewayProxyEvent,
+    event: ValidatedEvent<SaveSessionRequest>,
 ): Promise<APIGatewayProxyResult> {
-    const { errorResponse, data: body } = await Http.parseAndValidate(
-        event,
-        saveSessionSchema,
+    await saveSessionLogic(
+        event.validatedBody.userId,
+        event.validatedBody.sessionId,
     );
-    if (errorResponse) return errorResponse;
 
-    await saveSessionLogic(body.userId, body.sessionId);
-
-    return Http.success(200, {
-        message: "Session ended and saved successfully.",
-    });
+    return {
+        statusCode: 200,
+        body: JSON.stringify({
+            message: "Session ended and saved successfully.",
+        }),
+    };
 }
 
-export const handler = middy<APIGatewayProxyEvent, APIGatewayProxyResult>()
+export const handler = middy<
+    ValidatedEvent<SaveSessionRequest>,
+    APIGatewayProxyResult
+>()
     .use(logger())
-    .use(httpJsonBodyParser())
+    .use(validateRequest(saveSessionSchema))
     .use(errorHandler())
     .handler(saveSessionHandler);

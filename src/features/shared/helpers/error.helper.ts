@@ -39,3 +39,18 @@ export class ConflictError extends AppError {
         super(message, 409, data);
     }
 }
+
+export type ValidationErrorDetails = {
+    validationErrors: Array<{
+        property: string;
+        message?: string;
+    }>;
+};
+
+export class ValidationError extends BadRequestError {
+    constructor(validationErrors: ValidationErrorDetails["validationErrors"]) {
+        super("Schema validation failed.", {
+            validationErrors: JSON.stringify(validationErrors),
+        });
+    }
+}

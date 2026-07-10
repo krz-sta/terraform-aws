@@ -4,25 +4,34 @@ import { BadRequestError } from "../helpers/error.helper.js";
 export type ParsedEvent = APIGatewayProxyEvent & {
     input?: Record<string, unknown>;
 };
+function parseBody(body: string | null | undefined): Record<string, unknown> {
+    if (body !== null && body !== undefined) {
+        let parsed: unknown;
 
-function createInput(body: string | null | undefined): Record<string, unknown> {
-    if (body !== null && body != undefined) {
         try {
-            return JSON.parse(body);
+            parsed = JSON.parse(body);
         } catch {
             throw new BadRequestError("Invalid JSON body.");
         }
-    } else {
-        throw new BadRequestError("No request body.");
+
+        if (
+            typeof parsed !== "object" ||
+            parsed === null ||
+            Array.isArray(parsed)
+        ) {
+            throw new BadRequestError("Invalid JSON body.");
+        }
+
+        return parsed as Record<string, unknown>;
     }
+    throw new BadRequestError("Missing JSON body.");
 }
 
-export function bodyParser() {
+export function parser() {
     return {
-        before: function (request: { event: APIGatewayProxyEvent }): void {
-            (request.event as ParsedEvent).input = createInput(
-                request.event.body,
-            );
+        before: (request: { event: APIGatewayProxyEvent }): void => {
+            const parsedBody = parseBody(request.event.body);
+            (request.event as ParsedEvent).input = parsedBody;
         },
     };
 }

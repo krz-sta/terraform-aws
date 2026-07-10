@@ -1,26 +1,34 @@
-import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
-import { Http } from "../../shared/helpers/http.helper.js";
+import { APIGatewayProxyResult } from "aws-lambda";
 import { errorHandler } from "../../shared/middleware/error.middleware.js";
 import { logger } from "../../shared/middleware/logger.middleware.js";
+import {
+    validateRequest,
+    ValidatedEvent,
+} from "../../shared/middleware/validation.middleware.js";
+import middy from "@middy/core";
 import { getSessionLogic } from "./get-session.helper.js";
 import { getSessionSchema } from "./get-session.schema.js";
-import middy from "@middy/core";
+import { GetSessionRequest } from "../../shared/types/requests.js";
 
 async function getSessionHandler(
-    event: APIGatewayProxyEvent,
+    event: ValidatedEvent<GetSessionRequest>,
 ): Promise<APIGatewayProxyResult> {
-    const { errorResponse, data: body } = await Http.parseAndValidate(
-        event,
-        getSessionSchema,
+    const sessionData = await getSessionLogic(
+        event.validatedBody.userId,
+        event.validatedBody.sessionId,
     );
-    if (errorResponse) return errorResponse;
 
-    const sessionData = await getSessionLogic(body.userId, body.sessionId);
-
-    return Http.success(200, sessionData);
+    return {
+        statusCode: 200,
+        body: JSON.stringify(sessionData),
+    };
 }
 
-export const handler = middy<APIGatewayProxyEvent, APIGatewayProxyResult>()
+export const handler = middy<
+    ValidatedEvent<GetSessionRequest>,
+    APIGatewayProxyResult
+>()
     .use(logger())
+    .use(validateRequest(getSessionSchema))
     .use(errorHandler())
     .handler(getSessionHandler);
