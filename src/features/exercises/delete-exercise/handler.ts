@@ -1,6 +1,7 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { Http } from "../../shared/helpers/http.helper.js";
 import { errorHandler } from "../../shared/middleware/error.middleware.js";
+import { logger } from "../../shared/middleware/logger.middleware.js";
 import { deleteExerciseLogic } from "./delete-exercise.helper.js";
 import { deleteExerciseSchema } from "./delete-exercise.schema.js";
 import middy from "@middy/core";
@@ -23,6 +24,7 @@ async function deleteExerciseHandler(
 }
 
 export const handler = middy<APIGatewayProxyEvent, APIGatewayProxyResult>()
+    .use(logger())
     .use(httpJsonBodyParser())
     .use(errorHandler())
     .handler(deleteExerciseHandler);

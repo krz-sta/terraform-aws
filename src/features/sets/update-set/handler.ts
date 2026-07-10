@@ -1,5 +1,6 @@
 import { Http } from "../../shared/helpers/http.helper.js";
 import { errorHandler } from "../../shared/middleware/error.middleware.js";
+import { logger } from "../../shared/middleware/logger.middleware.js";
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { updateSetLogic } from "./update-set.helper.js";
 import { updateSetSchema } from "./update-set.schema.js";
@@ -29,6 +30,7 @@ async function updateSetHandler(
 }
 
 export const handler = middy<APIGatewayProxyEvent, APIGatewayProxyResult>()
+    .use(logger())
     .use(httpJsonBodyParser())
     .use(errorHandler())
     .handler(updateSetHandler);

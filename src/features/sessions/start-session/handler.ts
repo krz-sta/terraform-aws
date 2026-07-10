@@ -1,5 +1,6 @@
 import { Http } from "../../shared/helpers/http.helper.js";
 import { errorHandler } from "../../shared/middleware/error.middleware.js";
+import { logger } from "../../shared/middleware/logger.middleware.js";
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { startSessionLogic } from "./start-session.helper.js";
 import { startSessionSchema } from "./start-session.schema.js";
@@ -21,6 +22,7 @@ async function startSessionHandler(
 }
 
 export const handler = middy<APIGatewayProxyEvent, APIGatewayProxyResult>()
+    .use(logger())
     .use(httpJsonBodyParser())
     .use(errorHandler())
     .handler(startSessionHandler);

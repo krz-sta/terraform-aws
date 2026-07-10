@@ -1,6 +1,7 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { Http } from "../../shared/helpers/http.helper.js";
 import { errorHandler } from "../../shared/middleware/error.middleware.js";
+import { logger } from "../../shared/middleware/logger.middleware.js";
 import { getStatsLogic } from "./get-stats.helper.js";
 import { getStatsSchema } from "./get-stats.schema.js";
 import middy from "@middy/core";
@@ -21,6 +22,7 @@ async function getStatsHandler(
 }
 
 export const handler = middy<APIGatewayProxyEvent, APIGatewayProxyResult>()
+    .use(logger())
     .use(httpJsonBodyParser())
     .use(errorHandler())
     .handler(getStatsHandler);

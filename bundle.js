@@ -3,6 +3,9 @@ import fs from "fs";
 import { execSync } from "child_process";
 import archiver from "archiver";
 import path from "path";
+import crypto from "crypto";
+
+const CACHE_FILE = "dist/.build-cache.json";
 
 const entryPoints = [
     "src/features/archive/archive-workout/handler.ts",
@@ -19,6 +22,8 @@ const entryPoints = [
     "src/features/stats/update-stats/handler.ts",
     "src/features/status/get-status/handler.ts",
 ];
+
+const layers = ["src/infrastructure/layers/shared-libs-layer/nodejs"];
 
 function zipDirectory(sourceDir, outputPath) {
     return new Promise((resolve, reject) => {
@@ -63,17 +68,18 @@ async function runBuild() {
 
     console.log("Creating zip files...");
     for (const entryPoint of entryPoints) {
-        const lambdaName = entryPoint.split("/")[3];
+        const lambdaName = path.dirname(entryPoint).split("/").pop();
         await zipDirectory(
             `${path.dirname(entryPoint).replace("src/features", "dist")}`,
             `dist/zip/${lambdaName}.zip`,
         );
     }
 
-    await zipDirectory(
-        "src/infrastructure/layers/shared-libs-layer",
-        "dist/zip/shared-libs-layer.zip",
-    );
+    for (const layer of layers) {
+        const layerDir = path.dirname(layer);
+        const layerName = layerDir.split("/").pop();
+        await zipDirectory(layerDir, `dist/zip/${layerName}.zip`);
+    }
 
     console.log("Build success.");
 }
