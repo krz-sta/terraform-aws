@@ -17,16 +17,25 @@
   "scripts": {
     "type-check": "tsc --noEmit",
     "build:esbuild": "node bundle.js",
-    "bundle": "npm run type-check && npm run build:esbuild"
+    "bundle": "npm run type-check && npm run build:esbuild",
+    "test": "NODE_OPTIONS=--experimental-vm-modules jest",
+    "test:watch": "NODE_OPTIONS=--experimental-vm-modules jest --watch",
+    "lint": "eslint src",
+    "lint:fix": "eslint src --fix"
   },
   "devDependencies": {
     "@aws-sdk/client-dynamodb": "3.1075.0",
     "@aws-sdk/lib-dynamodb": "3.1075.0",
     "@aws/durable-execution-sdk-js": "^2.1.0",
+    "@eslint/js": "^10.0.1",
     "@types/aws-lambda": "8.10.162",
     "archiver": "7.0.1",
     "esbuild": "0.28.1",
-    "tsx": "4.22.4"
+    "eslint": "^10.7.0",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.3.0",
+    "tsx": "4.22.4",
+    "typescript-eslint": "^8.63.0"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "3.1077.0",

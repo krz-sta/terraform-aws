@@ -10,6 +10,8 @@
 
     "moduleResolution": "nodenext",
 
+    "isolatedModules": true,
+
     "noUnusedLocals": true,
 
     "noUnusedParameters": true,
@@ -29,6 +31,8 @@
     "allowSyntheticDefaultImports": true,
 
     "strictNullChecks": true,
+
+    "skipLibCheck": true,
 
     "module": "nodenext"
 

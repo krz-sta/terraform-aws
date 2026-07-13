@@ -25,6 +25,7 @@ export async function getStatsLogic(userId: string) {
     };
 
     for (const stat of stats) {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { SK, UserId: _userId, ...payload } = stat;
 
         if (SK === "STAT#TOTAL") {
