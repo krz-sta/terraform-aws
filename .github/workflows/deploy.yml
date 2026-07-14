@@ -1,8 +1,9 @@
-name: Deploy to dev
+name: Deploy
 
 on:
     push:
-        branches: [dev]
+        branches: [main]
+    workflow_dispatch:
 
 permissions:
     contents: read
@@ -11,7 +12,6 @@ permissions:
 jobs:
     deploy:
         runs-on: ubuntu-latest
-        environment: dev
         steps:
             - uses: actions/checkout@v4
 
@@ -36,10 +36,7 @@ jobs:
               run: terraform init
 
             - working-directory: terraform
-              run: terraform workspace select dev || terraform workspace new dev
-
-            - working-directory: terraform
-              run: terraform plan -input=false -var="environment=dev" -out=tfplan
+              run: terraform plan -input=false -var="environment=prod" -out=tfplan
 
             - working-directory: terraform
               run: terraform apply -input=false -auto-approve tfplan
