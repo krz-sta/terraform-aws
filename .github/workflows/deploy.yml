@@ -36,7 +36,7 @@ jobs:
               run: terraform init
 
             - working-directory: terraform
-              run: terraform plan -input=false -var="environment=prod" -out=tfplan
+              run: terraform plan -input=false -out=tfplan
 
             - working-directory: terraform
               run: terraform apply -input=false -auto-approve tfplan
