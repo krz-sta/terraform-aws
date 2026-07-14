@@ -1,0 +1,45 @@
+name: Deploy to prod
+
+on:
+    push:
+        branches: [main]
+
+permissions:
+    contents: read
+    id-token: write
+
+jobs:
+    deploy:
+        runs-on: ubuntu-latest
+        environment: prod
+        steps:
+            - uses: actions/checkout@v4
+
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: 24
+                  cache: npm
+
+            - run: npm ci
+            - run: npm run bundle
+
+            - uses: aws-actions/configure-aws-credentials@v4
+              with:
+                  role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN_PROD }}
+                  aws-region: ${{ vars.AWS_REGION }}
+
+            - uses: hashicorp/setup-terraform@v3
+              with:
+                  terraform_version: "1.10.x"
+
+            - working-directory: terraform
+              run: terraform init
+
+            - working-directory: terraform
+              run: terraform workspace select prod || terraform workspace new prod
+
+            - working-directory: terraform
+              run: terraform plan -input=false -var="environment=prod" -out=tfplan
+
+            - working-directory: terraform
+              run: terraform apply -input=false -auto-approve tfplan
