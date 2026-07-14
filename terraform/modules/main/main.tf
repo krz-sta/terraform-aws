@@ -1,5 +1,5 @@
 locals {
-  prefix = var.project_name
+  prefix = "${var.project_name}-${var.environment}"
 }
 
 resource "aws_lambda_layer_version" "shared_libs" {

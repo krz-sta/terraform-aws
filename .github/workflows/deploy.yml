@@ -1,0 +1,42 @@
+name: Deploy
+
+on:
+    push:
+        branches: [main]
+    workflow_dispatch:
+
+permissions:
+    contents: read
+    id-token: write
+
+jobs:
+    deploy:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: 24
+                  cache: npm
+
+            - run: npm ci
+            - run: npm run bundle
+
+            - uses: aws-actions/configure-aws-credentials@v4
+              with:
+                  role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+                  aws-region: ${{ vars.AWS_REGION }}
+
+            - uses: hashicorp/setup-terraform@v3
+              with:
+                  terraform_version: "1.10.x"
+
+            - working-directory: terraform
+              run: terraform init
+
+            - working-directory: terraform
+              run: terraform plan -input=false -var="environment=prod" -out=tfplan
+
+            - working-directory: terraform
+              run: terraform apply -input=false -auto-approve tfplan
