@@ -3,13 +3,10 @@ import { ParquetSchema, ParquetWriter } from "@dsnp/parquetjs";
 import path from "path";
 import crypto from "crypto";
 import fs from "fs";
+import { requireEnv } from "../../shared/helpers/env.helper.js";
 
 const s3 = new S3Client({});
-const bucketName = process.env.WORKOUTS_ARCHIVE_BUCKET_NAME;
-
-if (!bucketName) {
-    throw new Error("Missing environment variable.");
-}
+const bucketName = requireEnv("WORKOUTS_ARCHIVE_BUCKET_NAME");
 
 const schema = new ParquetSchema({
     UserId: { type: "UTF8" },
