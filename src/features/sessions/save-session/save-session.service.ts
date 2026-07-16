@@ -8,20 +8,18 @@ const SESSION_HISTORY_TABLE_NAME = requireEnv("SESSION_HISTORY_TABLE_NAME");
 export async function saveSession(sessionData: SessionHistoryItem) {
     await transactWrite([
         {
-            Put: {
-                TableName: SESSION_HISTORY_TABLE_NAME,
-                Item: sessionData,
-            },
+            type: "put",
+            tableName: SESSION_HISTORY_TABLE_NAME,
+            item: sessionData,
         },
         {
-            Delete: {
-                TableName: ACTIVE_SESSIONS_TABLE_NAME,
-                Key: {
-                    UserId: sessionData.UserId,
-                    SessionId: sessionData.SessionId,
-                },
-                ConditionExpression:
-                    "attribute_exists(UserId) AND attribute_exists(SessionId)",
+            type: "delete",
+            tableName: ACTIVE_SESSIONS_TABLE_NAME,
+            key: {
+                pkName: "UserId",
+                pk: sessionData.UserId,
+                skName: "SessionId",
+                sk: sessionData.SessionId,
             },
         },
     ]);

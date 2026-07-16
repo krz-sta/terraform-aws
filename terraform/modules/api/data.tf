@@ -43,3 +43,10 @@ data "aws_iam_policy_document" "get_stats" {
     resources = [var.user_stats_table_arn]
   }
 }
+
+data "aws_iam_policy_document" "start_delete_data" {
+  statement {
+    actions   = ["states:StartSyncExecution"]
+    resources = [var.delete_data_state_machine_arn]
+  }
+}

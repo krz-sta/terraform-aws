@@ -4,6 +4,7 @@ import path from "path";
 import crypto from "crypto";
 import fs from "fs";
 import { requireEnv } from "../../shared/helpers/env.helper.js";
+import type { WorkoutSnapshot } from "../../shared/types/archive.js";
 
 const s3 = new S3Client({});
 const bucketName = requireEnv("WORKOUTS_ARCHIVE_BUCKET_NAME");
@@ -16,15 +17,6 @@ const schema = new ParquetSchema({
     TimeToExist: { type: "INT64" },
     ExercisesJson: { type: "UTF8" },
 });
-
-export type WorkoutSnapshot = {
-    UserId: string;
-    SessionId: string;
-    StartTime: string;
-    EndTime: string;
-    TimeToExist: number;
-    Exercises: unknown;
-};
 
 async function buildParquetBuffer(workout: WorkoutSnapshot) {
     const tmpFilePath = path.join("/tmp", `${crypto.randomUUID()}.parquet`);

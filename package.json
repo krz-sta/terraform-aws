@@ -43,6 +43,7 @@
     "@aws-sdk/client-dynamodb": "3.1075.0",
     "@aws-sdk/lib-dynamodb": "3.1075.0",
     "@aws-sdk/client-s3": "3.1077.0",
+    "@aws-sdk/client-sfn": "3.1077.0",
     "@dsnp/parquetjs": "1.8.7",
     "@middy/core": "7.7.0",
     "@middy/http-error-handler": "^7.7.0",

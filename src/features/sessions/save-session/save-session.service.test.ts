@@ -33,20 +33,18 @@ describe("saveSession", () => {
 
         expect(mockedTransactWrite).toHaveBeenCalledWith([
             {
-                Put: {
-                    TableName: "session-history",
-                    Item: sessionData,
-                },
+                type: "put",
+                tableName: "session-history",
+                item: sessionData,
             },
             {
-                Delete: {
-                    TableName: "active-sessions",
-                    Key: {
-                        UserId: "user-123",
-                        SessionId: "session-456",
-                    },
-                    ConditionExpression:
-                        "attribute_exists(UserId) AND attribute_exists(SessionId)",
+                type: "delete",
+                tableName: "active-sessions",
+                key: {
+                    pkName: "UserId",
+                    pk: "user-123",
+                    skName: "SessionId",
+                    sk: "session-456",
                 },
             },
         ]);

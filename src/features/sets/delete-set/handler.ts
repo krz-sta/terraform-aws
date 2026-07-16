@@ -1,11 +1,10 @@
 import { APIGatewayProxyResult } from "aws-lambda";
 import { errorHandler } from "../../shared/middleware/error.middleware.js";
 import { logger } from "../../shared/middleware/logger.middleware.js";
-import {
-    validateRequest,
-    ValidatedEvent,
-} from "../../shared/middleware/validation.middleware.js";
+import { validateRequest } from "../../shared/middleware/validation.middleware.js";
+import type { ValidatedEvent } from "../../shared/types/events.js";
 import middy from "@middy/core";
+import { parser } from "../../shared/middleware/parser.middleware.js";
 import { deleteSetLogic } from "./delete-set.helper.js";
 import { deleteSetSchema } from "./delete-set.schema.js";
 import { DeleteSetRequest } from "../../shared/types/requests.js";
@@ -31,6 +30,7 @@ export const handler = middy<
     APIGatewayProxyResult
 >()
     .use(logger())
+    .use(parser())
     .use(validateRequest(deleteSetSchema))
     .use(errorHandler())
     .handler(deleteSetHandler);

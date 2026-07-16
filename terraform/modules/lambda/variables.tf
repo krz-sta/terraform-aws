@@ -25,6 +25,11 @@ variable "layers" {
   default = []
 }
 
+variable "timeout" {
+  type    = number
+  default = 3
+}
+
 variable "env_variables" {
   type    = map(string)
   default = {}

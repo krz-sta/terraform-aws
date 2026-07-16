@@ -1,10 +1,8 @@
 import { APIGatewayProxyResult } from "aws-lambda";
 import { errorHandler } from "../../shared/middleware/error.middleware.js";
 import { logger } from "../../shared/middleware/logger.middleware.js";
-import {
-    validateRequest,
-    ValidatedEvent,
-} from "../../shared/middleware/validation.middleware.js";
+import { validateRequest } from "../../shared/middleware/validation.middleware.js";
+import type { ValidatedEvent } from "../../shared/types/events.js";
 import middy from "@middy/core";
 import { parser } from "../../shared/middleware/parser.middleware.js";
 import { deleteExerciseLogic } from "./delete-exercise.helper.js";

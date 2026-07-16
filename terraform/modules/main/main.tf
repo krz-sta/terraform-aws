@@ -19,6 +19,22 @@ module "auth" {
   prefix = local.prefix
 }
 
+module "delete_data_workflow" {
+  source = "../delete_data_workflow"
+  prefix = local.prefix
+
+  shared_libs_layer_arn = aws_lambda_layer_version.shared_libs.arn
+
+  active_sessions_table_name   = module.storage.ddb_active_sessions_table_name
+  active_sessions_table_arn    = module.storage.ddb_active_sessions_table_arn
+  session_history_table_name   = module.storage.ddb_session_history_table_name
+  session_history_table_arn    = module.storage.ddb_session_history_table_arn
+  user_stats_table_name        = module.storage.ddb_user_stats_table_name
+  user_stats_table_arn         = module.storage.ddb_user_stats_table_arn
+  workouts_archive_bucket_name = module.storage.s3_workouts_archive_bucket_name
+  workouts_archive_bucket_arn  = module.storage.s3_workouts_archive_bucket_arn
+}
+
 module "api" {
   source                = "../api"
   prefix                = local.prefix
@@ -26,12 +42,13 @@ module "api" {
 
   shared_libs_layer_arn = aws_lambda_layer_version.shared_libs.arn
 
-  active_sessions_table_arn  = module.storage.ddb_active_sessions_table_arn
-  active_sessions_table_name = module.storage.ddb_active_sessions_table_name
-  session_history_table_arn  = module.storage.ddb_session_history_table_arn
-  session_history_table_name = module.storage.ddb_session_history_table_name
-  user_stats_table_arn       = module.storage.ddb_user_stats_table_arn
-  user_stats_table_name      = module.storage.ddb_user_stats_table_name
+  active_sessions_table_arn     = module.storage.ddb_active_sessions_table_arn
+  active_sessions_table_name    = module.storage.ddb_active_sessions_table_name
+  session_history_table_arn     = module.storage.ddb_session_history_table_arn
+  session_history_table_name    = module.storage.ddb_session_history_table_name
+  user_stats_table_arn          = module.storage.ddb_user_stats_table_arn
+  user_stats_table_name         = module.storage.ddb_user_stats_table_name
+  delete_data_state_machine_arn = module.delete_data_workflow.state_machine_arn
 }
 
 module "workers" {

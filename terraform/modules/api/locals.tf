@@ -120,5 +120,17 @@ locals {
       secured              = true
       resource_id          = aws_api_gateway_resource.stats.id
     }
+    "start-delete-data" = {
+      method  = "DELETE"
+      layers  = [var.shared_libs_layer_arn]
+      timeout = 28
+      env = {
+        DELETE_DATA_STATE_MACHINE_ARN = var.delete_data_state_machine_arn
+      }
+      policy               = data.aws_iam_policy_document.start_delete_data.json
+      create_custom_policy = true
+      secured              = true
+      resource_id          = aws_api_gateway_resource.delete_data.id
+    }
   }
 }

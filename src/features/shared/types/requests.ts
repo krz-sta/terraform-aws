@@ -38,6 +38,8 @@ export type SaveSessionRequest = SessionScoped;
 
 export type StartSessionRequest = UserScoped;
 
+export type StartDeleteDataRequest = UserScoped;
+
 export type UpdateSetRequest = ExerciseScoped & {
     setIndex: number;
     setData: SetInput;

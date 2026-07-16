@@ -32,6 +32,12 @@ resource "aws_api_gateway_resource" "stats" {
   path_part   = "stats"
 }
 
+resource "aws_api_gateway_resource" "delete_data" {
+  rest_api_id = aws_api_gateway_rest_api.api.id
+  parent_id   = aws_api_gateway_rest_api.api.root_resource_id
+  path_part   = "delete-data"
+}
+
 module "api_iam" {
   source   = "../iam"
   for_each = local.api_endpoints
@@ -50,6 +56,7 @@ module "api_lambda" {
   role_arn      = module.api_iam[each.key].role_arn
   layers        = each.value.layers
   env_variables = each.value.env
+  timeout       = try(each.value.timeout, 3)
 }
 
 module "api_endpoints" {

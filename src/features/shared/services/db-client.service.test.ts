@@ -12,6 +12,7 @@ const {
     add,
     delete: deleteItem,
     query,
+    transactWrite,
 } = await import("./db-client.service.js");
 
 describe("buildKey (via exported operations)", () => {
@@ -164,5 +165,85 @@ describe("query", () => {
         const result = await query({ pkName: "pk", pk: "1" }, "table");
 
         expect(result).toEqual([]);
+    });
+
+    it("rejects results that exceed one page", async () => {
+        mockedSend.mockResolvedValue({
+            Items: [{ id: "1" }],
+            LastEvaluatedKey: { pk: "1", sk: "1" },
+        });
+
+        await expect(query({ pkName: "pk", pk: "1" }, "table")).rejects.toThrow(
+            "DynamoDB query exceeded the single-page limit.",
+        );
+    });
+
+    it("allows a limited query to return one page", async () => {
+        mockedSend.mockResolvedValue({
+            Items: [{ id: "1" }],
+            LastEvaluatedKey: { pk: "1", sk: "1" },
+        });
+
+        const result = await query({ pkName: "pk", pk: "1" }, "table", {
+            limit: 1,
+        });
+
+        expect(result).toEqual([{ id: "1" }]);
+        expect(mockedSend).toHaveBeenCalledTimes(1);
+    });
+});
+
+describe("transactWrite", () => {
+    beforeEach(() => {
+        jest.resetAllMocks();
+    });
+
+    it("builds put and conditional delete operations", async () => {
+        mockedSend.mockResolvedValue({});
+
+        await transactWrite([
+            {
+                type: "put",
+                tableName: "history",
+                item: { UserId: "user-123" },
+            },
+            {
+                type: "delete",
+                tableName: "active",
+                key: {
+                    pkName: "UserId",
+                    pk: "user-123",
+                    skName: "SessionId",
+                    sk: "session-456",
+                },
+            },
+        ]);
+
+        const command = mockedSend.mock.calls[0][0] as {
+            input: { TransactItems: unknown[] };
+        };
+        expect(command.input.TransactItems).toEqual([
+            {
+                Put: {
+                    TableName: "history",
+                    Item: { UserId: "user-123" },
+                },
+            },
+            {
+                Delete: {
+                    TableName: "active",
+                    Key: {
+                        UserId: "user-123",
+                        SessionId: "session-456",
+                    },
+                    ConditionExpression:
+                        "attribute_exists(#partitionKey) AND attribute_exists(#sortKey)",
+                    ExpressionAttributeNames: {
+                        "#partitionKey": "UserId",
+                        "#sortKey": "SessionId",
+                    },
+                },
+            },
+        ]);
     });
 });

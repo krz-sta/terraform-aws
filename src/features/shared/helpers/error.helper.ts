@@ -1,3 +1,5 @@
+import type { ValidationErrorDetails } from "../types/errors.js";
+
 export class AppError extends Error {
     public readonly statusCode: number;
     public readonly data?: { [key: string]: string };
@@ -39,13 +41,6 @@ export class ConflictError extends AppError {
         super(message, 409, data);
     }
 }
-
-export type ValidationErrorDetails = {
-    validationErrors: Array<{
-        property: string;
-        message?: string;
-    }>;
-};
 
 export class ValidationError extends BadRequestError {
     constructor(validationErrors: ValidationErrorDetails["validationErrors"]) {

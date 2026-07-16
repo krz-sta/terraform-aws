@@ -1,9 +1,7 @@
 import { APIGatewayProxyEvent } from "aws-lambda";
 import { BadRequestError } from "../helpers/error.helper.js";
+import type { ParsedEvent } from "../types/events.js";
 
-export type ParsedEvent = APIGatewayProxyEvent & {
-    input?: Record<string, unknown>;
-};
 function parseBody(body: string | null | undefined): Record<string, unknown> {
     if (body !== null && body !== undefined) {
         let parsed: unknown;

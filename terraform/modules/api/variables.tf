@@ -33,3 +33,7 @@ variable "session_history_table_name" {
 variable "user_stats_table_name" {
   type = string
 }
+
+variable "delete_data_state_machine_arn" {
+  type = string
+}

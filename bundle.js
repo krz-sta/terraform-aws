@@ -9,6 +9,10 @@ const CACHE_FILE = "dist/.build-cache.json";
 
 const entryPoints = [
     "src/features/archive/archive-workout/handler.ts",
+    "src/features/data/check-active-session/handler.ts",
+    "src/features/data/cleanup-delete-data/handler.ts",
+    "src/features/data/delete-user-data/handler.ts",
+    "src/features/data/start-delete-data/handler.ts",
     "src/features/exercises/add-exercise/handler.ts",
     "src/features/exercises/delete-exercise/handler.ts",
     "src/features/sessions/cancel-session/handler.ts",

@@ -1,41 +1,17 @@
-import { AttributeValue } from "@aws-sdk/client-dynamodb";
 import { unmarshall } from "@aws-sdk/util-dynamodb";
 import { SQSEvent, SQSRecord } from "aws-lambda";
 import { add, get, update } from "../../shared/services/db-client.service.js";
-import {
-    ExercisesMap,
-    SetData,
-    UserStatItem,
-} from "../../shared/types/workout.js";
+import { UserStatItem } from "../../shared/types/workout.js";
 import { requireEnv } from "../../shared/helpers/env.helper.js";
+import type { DynamoDbStreamRecord } from "../../shared/types/events.js";
+import type {
+    ExerciseData,
+    ParsedSessionData,
+    SessionStatsInput,
+    SetLike,
+} from "../../shared/types/stats.js";
 
 const USER_STATS_TABLE_NAME = requireEnv("USER_STATS_TABLE_NAME");
-
-type DynamoDbRecord = {
-    dynamodb?: {
-        NewImage?: Record<string, AttributeValue>;
-    };
-};
-
-type ParsedSessionData = {
-    UserId: string;
-    Exercises: ExercisesMap;
-};
-
-type SetLike = Partial<SetData> & {
-    Weight?: number;
-    Reps?: number;
-};
-
-type ExerciseData = {
-    Sets?: SetLike[];
-    sets?: SetLike[];
-};
-
-export type SessionStatsInput = {
-    userId: string;
-    exercises: Record<string, ExerciseData>;
-};
 
 function parseJson(value: string): unknown {
     try {
@@ -55,7 +31,7 @@ function hasRecordsProperty(
     return "Records" in value && Array.isArray(value.Records);
 }
 
-function isDynamoDbRecord(value: unknown): value is DynamoDbRecord {
+function isDynamoDbRecord(value: unknown): value is DynamoDbStreamRecord {
     if (!isRecord(value)) return false;
     if (!("dynamodb" in value)) return true;
 
@@ -66,7 +42,7 @@ function isDynamoDbRecord(value: unknown): value is DynamoDbRecord {
     return isRecord(dynamodb.NewImage);
 }
 
-function getDbRecords(payload: unknown): DynamoDbRecord[] {
+function getDbRecords(payload: unknown): DynamoDbStreamRecord[] {
     if (!isRecord(payload)) return [];
 
     if (hasRecordsProperty(payload)) {
@@ -95,7 +71,7 @@ function isParsedSessionData(value: unknown): value is ParsedSessionData {
     );
 }
 
-function parseDbRecords(record: SQSRecord): DynamoDbRecord[] {
+function parseDbRecords(record: SQSRecord): DynamoDbStreamRecord[] {
     const sqsBody = parseJson(record.body);
     const message = unwrapSnsMessage(sqsBody);
     return getDbRecords(message);

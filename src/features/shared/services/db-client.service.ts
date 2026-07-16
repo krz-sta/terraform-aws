@@ -5,16 +5,13 @@ import {
     DeleteCommand,
     QueryCommand,
     TransactWriteCommand,
-    TransactWriteCommandInput,
 } from "@aws-sdk/lib-dynamodb";
 import { docClient } from "../helpers/db-client.helper.js";
-
-export type DbKey = {
-    pkName: string;
-    pk: string;
-    skName?: string;
-    sk?: string;
-};
+import type {
+    DbKey,
+    QueryOptions,
+    TransactWriteOperation,
+} from "../types/database.js";
 
 function buildKey(key: DbKey) {
     const normalizedKey: Record<string, string> = {
@@ -35,6 +32,33 @@ function buildKey(key: DbKey) {
     return normalizedKey;
 }
 
+function buildPutInput(item: Record<string, unknown>, tableName: string) {
+    return {
+        TableName: tableName,
+        Item: item,
+    };
+}
+
+function buildDeleteInput(key: DbKey, tableName: string) {
+    const hasSortKey = key.skName !== undefined && key.sk !== undefined;
+    const expressionAttributeNames: Record<string, string> = {
+        "#partitionKey": key.pkName,
+    };
+
+    if (hasSortKey) {
+        expressionAttributeNames["#sortKey"] = key.skName as string;
+    }
+
+    return {
+        TableName: tableName,
+        Key: buildKey(key),
+        ConditionExpression: hasSortKey
+            ? "attribute_exists(#partitionKey) AND attribute_exists(#sortKey)"
+            : "attribute_exists(#partitionKey)",
+        ExpressionAttributeNames: expressionAttributeNames,
+    };
+}
+
 export async function get<
     T extends Record<string, unknown> = Record<string, unknown>,
 >(key: DbKey, tableName: string) {
@@ -50,12 +74,7 @@ export async function get<
 }
 
 export async function put(item: Record<string, unknown>, tableName: string) {
-    await docClient.send(
-        new PutCommand({
-            TableName: tableName,
-            Item: item,
-        }),
-    );
+    await docClient.send(new PutCommand(buildPutInput(item, tableName)));
 }
 
 export async function update(
@@ -125,40 +144,14 @@ export async function add(
 }
 
 async function deleteFn(key: DbKey, tableName: string) {
-    const hasSortKey = key.skName !== undefined && key.sk !== undefined;
-
-    await docClient.send(
-        new DeleteCommand({
-            TableName: tableName,
-            Key: buildKey(key),
-            ConditionExpression: hasSortKey
-                ? "attribute_exists(#partitionKey) AND attribute_exists(#sortKey)"
-                : "attribute_exists(#partitionKey)",
-            ExpressionAttributeNames: hasSortKey
-                ? {
-                      "#partitionKey": key.pkName,
-                      "#sortKey": key.skName as string,
-                  }
-                : {
-                      "#partitionKey": key.pkName,
-                  },
-        }),
-    );
+    await docClient.send(new DeleteCommand(buildDeleteInput(key, tableName)));
 }
 
 export { deleteFn as delete };
 
 export async function query<
     T extends Record<string, unknown> = Record<string, unknown>,
->(
-    key: DbKey,
-    tableName: string,
-    options?: {
-        indexName?: string;
-        limit?: number;
-        scanIndexForward?: boolean;
-    },
-) {
+>(key: DbKey, tableName: string, options?: QueryOptions) {
     const hasSortKey = key.skName !== undefined && key.sk !== undefined;
 
     const keyConditionExpression = hasSortKey
@@ -185,12 +178,26 @@ export async function query<
         }),
     );
 
+    if (!options?.limit && result.LastEvaluatedKey) {
+        throw new Error("DynamoDB query exceeded the single-page limit.");
+    }
+
     return (result.Items as T[] | undefined) || [];
 }
 
-export async function transactWrite(
-    transactItems: TransactWriteCommandInput["TransactItems"],
-) {
+export async function transactWrite(operations: TransactWriteOperation[]) {
+    const transactItems = operations.map((operation) => {
+        if (operation.type === "put") {
+            return {
+                Put: buildPutInput(operation.item, operation.tableName),
+            };
+        }
+
+        return {
+            Delete: buildDeleteInput(operation.key, operation.tableName),
+        };
+    });
+
     await docClient.send(
         new TransactWriteCommand({
             TransactItems: transactItems,

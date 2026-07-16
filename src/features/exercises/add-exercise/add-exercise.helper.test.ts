@@ -23,30 +23,6 @@ describe("addExerciseLogic", () => {
         jest.resetAllMocks();
     });
 
-    it("adds a new exercise to the session", async () => {
-        mockedGet.mockResolvedValue({
-            UserId: userId,
-            SessionId: sessionId,
-            Exercises: {},
-        });
-        mockedUpdate.mockResolvedValue(undefined);
-
-        await addExerciseLogic(userId, sessionId, exerciseName);
-
-        expect(mockedUpdate).toHaveBeenCalledWith(
-            {
-                pkName: "UserId",
-                pk: userId,
-                skName: "SessionId",
-                sk: sessionId,
-            },
-            {
-                Exercises: { [exerciseName]: { Sets: [] } },
-            },
-            "active-sessions",
-        );
-    });
-
     it("keeps existing exercises when adding a new one", async () => {
         mockedGet.mockResolvedValue({
             UserId: userId,
@@ -60,7 +36,12 @@ describe("addExerciseLogic", () => {
         await addExerciseLogic(userId, sessionId, exerciseName);
 
         expect(mockedUpdate).toHaveBeenCalledWith(
-            expect.anything(),
+            {
+                pkName: "UserId",
+                pk: userId,
+                skName: "SessionId",
+                sk: sessionId,
+            },
             {
                 Exercises: {
                     squat: { Sets: [{ weight: 100, reps: 5 }] },

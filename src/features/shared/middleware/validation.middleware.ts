@@ -1,13 +1,9 @@
 import { APIGatewayProxyEvent } from "aws-lambda";
 import { Ajv, JSONSchemaType } from "ajv";
 import { ValidationError } from "../helpers/error.helper.js";
-import { ParsedEvent } from "./parser.middleware.js";
+import type { ParsedEvent, ValidatedEvent } from "../types/events.js";
 
 const ajv = new Ajv();
-
-export type ValidatedEvent<T> = ParsedEvent & {
-    validatedBody: T;
-};
 
 export function validateRequest<T>(schema: JSONSchemaType<T>) {
     return {

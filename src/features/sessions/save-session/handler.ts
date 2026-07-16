@@ -1,10 +1,8 @@
 import { APIGatewayProxyResult } from "aws-lambda";
 import { errorHandler } from "../../shared/middleware/error.middleware.js";
 import { logger } from "../../shared/middleware/logger.middleware.js";
-import {
-    validateRequest,
-    ValidatedEvent,
-} from "../../shared/middleware/validation.middleware.js";
+import { validateRequest } from "../../shared/middleware/validation.middleware.js";
+import type { ValidatedEvent } from "../../shared/types/events.js";
 import middy from "@middy/core";
 import { saveSessionLogic } from "./save-session.helper.js";
 import { saveSessionSchema } from "./save-session.schema.js";

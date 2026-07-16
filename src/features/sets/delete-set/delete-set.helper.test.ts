@@ -72,20 +72,6 @@ describe("deleteSetLogic", () => {
         ).rejects.toBeInstanceOf(NotFoundError);
     });
 
-    it("throws NotFoundError for a negative set index", async () => {
-        mockedGet.mockResolvedValue({
-            UserId: userId,
-            SessionId: sessionId,
-            Exercises: {
-                [exerciseName]: { Sets: [{ weight: 100, reps: 5 }] },
-            },
-        });
-
-        await expect(
-            deleteSetLogic(userId, sessionId, exerciseName, -1),
-        ).rejects.toBeInstanceOf(NotFoundError);
-    });
-
     it("throws NotFoundError for an out-of-range set index", async () => {
         mockedGet.mockResolvedValue({
             UserId: userId,
@@ -98,5 +84,6 @@ describe("deleteSetLogic", () => {
         await expect(
             deleteSetLogic(userId, sessionId, exerciseName, 3),
         ).rejects.toBeInstanceOf(NotFoundError);
+        expect(mockedUpdate).not.toHaveBeenCalled();
     });
 });

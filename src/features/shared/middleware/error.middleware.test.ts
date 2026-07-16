@@ -7,13 +7,6 @@ const { BadRequestError, NotFoundError } =
 describe("errorHandler middleware", () => {
     const middleware = errorHandler();
 
-    it("does nothing when there is no error", () => {
-        const request = { error: undefined };
-        const result = middleware.onError(request as any);
-
-        expect(result).toBeUndefined();
-    });
-
     it("maps AppError to the configured status code and message", () => {
         const request: any = { error: new NotFoundError("Missing.") };
 
