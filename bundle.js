@@ -3,9 +3,6 @@ import fs from "fs";
 import { execSync } from "child_process";
 import archiver from "archiver";
 import path from "path";
-import crypto from "crypto";
-
-const CACHE_FILE = "dist/.build-cache.json";
 
 const entryPoints = [
     "src/features/archive/archive-workout/handler.ts",
@@ -47,14 +44,17 @@ function zipDirectory(sourceDir, outputPath) {
 }
 
 async function runBuild() {
+    fs.rmSync("dist", { recursive: true, force: true });
     fs.mkdirSync("dist/zip", { recursive: true });
 
     console.log("Copying node_modules...");
     const layerDirectory = "src/infrastructure/layers/shared-libs-layer/nodejs";
     fs.mkdirSync(layerDirectory, { recursive: true });
     fs.cpSync("package.json", `${layerDirectory}/package.json`);
-    execSync("npm install --omit=dev", {
+    fs.cpSync("package-lock.json", `${layerDirectory}/package-lock.json`);
+    execSync("npm ci --omit=dev", {
         cwd: layerDirectory,
+        stdio: "inherit",
     });
 
     console.log("Building Lambda functions...");
@@ -71,21 +71,26 @@ async function runBuild() {
     });
 
     console.log("Creating zip files...");
-    for (const entryPoint of entryPoints) {
-        const lambdaName = path.dirname(entryPoint).split("/").pop();
-        await zipDirectory(
-            `${path.dirname(entryPoint).replace("src/features", "dist")}`,
-            `dist/zip/${lambdaName}.zip`,
-        );
-    }
+    await Promise.all(
+        entryPoints.map((entryPoint) => {
+            const lambdaName = path.basename(path.dirname(entryPoint));
+            return zipDirectory(
+                path.dirname(entryPoint).replace("src/features", "dist"),
+                `dist/zip/${lambdaName}.zip`,
+            );
+        }),
+    );
 
     for (const layer of layers) {
         const layerDir = path.dirname(layer);
-        const layerName = layerDir.split("/").pop();
+        const layerName = path.basename(layerDir);
         await zipDirectory(layerDir, `dist/zip/${layerName}.zip`);
     }
 
     console.log("Build success.");
 }
 
-runBuild().catch(() => process.exit(1));
+runBuild().catch((error) => {
+    console.error("Build failed:", error);
+    process.exitCode = 1;
+});

@@ -1,6 +1,5 @@
 import middy from "@middy/core";
 import { checkActiveSession } from "./check-active-session.helper.js";
-import { workflowLogger } from "../../shared/middleware/workflow-logger.middleware.js";
 import type {
     CheckActiveSessionResult,
     DeleteDataWorkflowInput,
@@ -19,6 +18,4 @@ async function checkActiveSessionHandler(
 export const handler = middy<
     DeleteDataWorkflowInput,
     CheckActiveSessionResult
->()
-    .use(workflowLogger("check-active-session"))
-    .handler(checkActiveSessionHandler);
+>().handler(checkActiveSessionHandler);
