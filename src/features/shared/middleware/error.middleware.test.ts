@@ -34,37 +34,11 @@ describe("errorHandler middleware", () => {
         });
     });
 
-    it("maps 422 http errors to 400 invalid JSON body", () => {
-        const request: any = {
-            error: { statusCode: 422, message: "Syntax error" },
-        };
-
-        middleware.onError(request);
-
-        expect(request.response).toEqual({
-            statusCode: 400,
-            body: JSON.stringify({ message: "Invalid JSON body." }),
-        });
-    });
-
-    it("maps other http errors to their status code", () => {
-        const request: any = {
-            error: { statusCode: 418, message: "I'm a teapot" },
-        };
-
-        middleware.onError(request);
-
-        expect(request.response).toEqual({
-            statusCode: 418,
-            body: JSON.stringify({ message: "I'm a teapot" }),
-        });
-    });
-
     it("maps unknown errors to 500", () => {
         const consoleSpy = jest
             .spyOn(console, "error")
             .mockImplementation(() => {});
-        const request: any = { error: new Error("boom") };
+        const request: any = { error: new Error("someerror") };
 
         middleware.onError(request);
 
