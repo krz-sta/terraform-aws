@@ -12,11 +12,10 @@ export function errorHandler() {
             if (!error) return;
 
             if (error instanceof AppError) {
-                const body: { message: string; details?: unknown } = {
-                    message: error.message,
-                };
-
-                if (error.data !== undefined) body.details = error.data;
+                const body =
+                    error.data !== undefined
+                        ? { message: error.message, details: error.data }
+                        : { message: error.message };
 
                 request.response = {
                     statusCode: error.statusCode,
