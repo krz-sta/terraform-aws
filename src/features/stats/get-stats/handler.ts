@@ -1,9 +1,6 @@
 import { APIGatewayProxyResult } from "aws-lambda";
-import { errorHandler } from "../../shared/middleware/error.middleware.js";
-import { logger } from "../../shared/middleware/logger.middleware.js";
-import { validateRequest } from "../../shared/middleware/validation.middleware.js";
+import { withValidatedRequest } from "../../shared/middleware/handler-wrapper.middleware.js";
 import type { ValidatedEvent } from "../../shared/types/events.js";
-import middy from "@middy/core";
 import { getStatsLogic } from "./get-stats.helper.js";
 import { getStatsSchema } from "./get-stats.schema.js";
 import { GetStatsRequest } from "../../shared/types/requests.js";
@@ -19,11 +16,4 @@ async function getStatsHandler(
     };
 }
 
-export const handler = middy<
-    ValidatedEvent<GetStatsRequest>,
-    APIGatewayProxyResult
->()
-    .use(logger())
-    .use(validateRequest(getStatsSchema))
-    .use(errorHandler())
-    .handler(getStatsHandler);
+export const handler = withValidatedRequest(getStatsSchema, getStatsHandler);

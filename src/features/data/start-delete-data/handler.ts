@@ -1,8 +1,5 @@
 import { APIGatewayProxyResult } from "aws-lambda";
-import middy from "@middy/core";
-import { errorHandler } from "../../shared/middleware/error.middleware.js";
-import { logger } from "../../shared/middleware/logger.middleware.js";
-import { validateRequest } from "../../shared/middleware/validation.middleware.js";
+import { withValidatedRequest } from "../../shared/middleware/handler-wrapper.middleware.js";
 import type { ValidatedEvent } from "../../shared/types/events.js";
 import { StartDeleteDataRequest } from "../../shared/types/requests.js";
 import { startDeleteDataSchema } from "./start-delete-data.schema.js";
@@ -19,11 +16,7 @@ async function startDeleteDataHandler(
     };
 }
 
-export const handler = middy<
-    ValidatedEvent<StartDeleteDataRequest>,
-    APIGatewayProxyResult
->()
-    .use(logger())
-    .use(validateRequest(startDeleteDataSchema))
-    .use(errorHandler())
-    .handler(startDeleteDataHandler);
+export const handler = withValidatedRequest(
+    startDeleteDataSchema,
+    startDeleteDataHandler,
+);

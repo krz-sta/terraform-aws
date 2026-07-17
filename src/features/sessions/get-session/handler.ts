@@ -1,9 +1,6 @@
 import { APIGatewayProxyResult } from "aws-lambda";
-import { errorHandler } from "../../shared/middleware/error.middleware.js";
-import { logger } from "../../shared/middleware/logger.middleware.js";
-import { validateRequest } from "../../shared/middleware/validation.middleware.js";
+import { withValidatedRequest } from "../../shared/middleware/handler-wrapper.middleware.js";
 import type { ValidatedEvent } from "../../shared/types/events.js";
-import middy from "@middy/core";
 import { getSessionLogic } from "./get-session.helper.js";
 import { getSessionSchema } from "./get-session.schema.js";
 import { GetSessionRequest } from "../../shared/types/requests.js";
@@ -22,11 +19,7 @@ async function getSessionHandler(
     };
 }
 
-export const handler = middy<
-    ValidatedEvent<GetSessionRequest>,
-    APIGatewayProxyResult
->()
-    .use(logger())
-    .use(validateRequest(getSessionSchema))
-    .use(errorHandler())
-    .handler(getSessionHandler);
+export const handler = withValidatedRequest(
+    getSessionSchema,
+    getSessionHandler,
+);
