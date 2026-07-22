@@ -1,56 +1,53 @@
-import { jest } from "@jest/globals";
-
-jest.unstable_mockModule(
-    "../delete-user-data/delete-user-data.helper.js",
-    () => ({
-        deleteUserData: jest.fn(),
-    }),
-);
-
-const { handler } = await import("./handler.js");
-const { deleteUserData } =
-    await import("../delete-user-data/delete-user-data.helper.js");
-const mockedDeleteUserData = deleteUserData as jest.MockedFunction<
-    typeof deleteUserData
->;
+import crypto from "crypto";
+import { handler } from "./handler.js";
+import { put } from "../../shared/services/db-client.service.js";
+import {
+    ACTIVE_SESSIONS_TABLE,
+    cleanupUser,
+    makeTestUserId,
+    ttlSoon,
+} from "../../../test-utils/aws.js";
 
 const invoke = (event: any): any => handler(event, {} as any, undefined as any);
 
 describe("cleanup-delete-data handler", () => {
-    beforeEach(() => {
-        jest.resetAllMocks();
+    const conflictUserId = makeTestUserId();
+
+    afterAll(async () => {
+        await cleanupUser(conflictUserId);
     });
 
     it("continues a partial deletion", async () => {
-        const result = {
-            userId: "user-123",
+        const userId = makeTestUserId();
+
+        await expect(invoke({ userId })).resolves.toEqual({
+            userId,
             deleted: {
-                sessionHistory: 1,
+                sessionHistory: 0,
                 userStats: 0,
-                archiveObjects: 2,
+                archiveObjects: 0,
             },
-        };
-        mockedDeleteUserData.mockResolvedValue(result);
-
-        await expect(invoke({ userId: "user-123" })).resolves.toEqual(result);
-
-        expect(mockedDeleteUserData).toHaveBeenCalledWith("user-123");
+        });
     });
 
     it("rejects missing userId", async () => {
         await expect(invoke({})).rejects.toThrow(
             "Missing required field: userId",
         );
-        expect(mockedDeleteUserData).not.toHaveBeenCalled();
     });
 
     it("propagates a cleanup failure", async () => {
-        mockedDeleteUserData.mockRejectedValue(
-            new Error("Storage is unavailable."),
+        await put(
+            {
+                UserId: conflictUserId,
+                SessionId: crypto.randomUUID(),
+                TimeToExist: ttlSoon(),
+            },
+            ACTIVE_SESSIONS_TABLE,
         );
 
-        await expect(invoke({ userId: "user-123" })).rejects.toThrow(
-            "Storage is unavailable.",
+        await expect(invoke({ userId: conflictUserId })).rejects.toThrow(
+            "Data cannot be deleted while an active session exists.",
         );
     });
 });

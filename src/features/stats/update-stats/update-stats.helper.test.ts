@@ -1,19 +1,13 @@
-import { jest } from "@jest/globals";
-
-jest.unstable_mockModule("../../shared/services/db-client.service.js", () => ({
-    add: jest.fn(),
-    get: jest.fn(),
-    update: jest.fn(),
-}));
-
-const { buildSessionsForStats, calculateSessionStats } =
-    await import("./update-stats.helper.js");
-const { add, get, update } =
-    await import("../../shared/services/db-client.service.js");
-
-const mockedGet = get as jest.MockedFunction<typeof get>;
-const mockedUpdate = update as jest.MockedFunction<typeof update>;
-const mockedAdd = add as jest.MockedFunction<typeof add>;
+import {
+    buildSessionsForStats,
+    calculateSessionStats,
+} from "./update-stats.helper.js";
+import { get, put } from "../../shared/services/db-client.service.js";
+import {
+    USER_STATS_TABLE,
+    cleanupUsers,
+    makeTestUserId,
+} from "../../../test-utils/aws.js";
 
 describe("buildSessionsForStats", () => {
     it("extracts a session from a DynamoDB stream event", () => {
@@ -92,16 +86,38 @@ describe("buildSessionsForStats", () => {
 });
 
 describe("calculateSessionStats", () => {
-    const userId = "user-123";
+    const testUsers: string[] = [];
 
-    beforeEach(() => {
-        jest.resetAllMocks();
-        mockedGet.mockResolvedValue(null);
-        mockedUpdate.mockResolvedValue(undefined);
-        mockedAdd.mockResolvedValue(undefined);
+    function newTestUser() {
+        const userId = makeTestUserId();
+        testUsers.push(userId);
+        return userId;
+    }
+
+    function exerciseKey(userId: string, exerciseName: string) {
+        return {
+            pkName: "UserId",
+            pk: userId,
+            skName: "SK",
+            sk: `EX#${exerciseName}`,
+        };
+    }
+
+    function totalKey(userId: string) {
+        return {
+            pkName: "UserId",
+            pk: userId,
+            skName: "SK",
+            sk: "STAT#TOTAL",
+        };
+    }
+
+    afterAll(async () => {
+        await cleanupUsers(testUsers);
     });
 
     it("calculates and persists weighted-exercise stats and total stats", async () => {
+        const userId = newTestUser();
         const sessions = [
             {
                 userId,
@@ -115,37 +131,29 @@ describe("calculateSessionStats", () => {
 
         await calculateSessionStats(sessions as any);
 
-        expect(mockedUpdate).toHaveBeenCalledWith(
-            {
-                pkName: "UserId",
-                pk: userId,
-                skName: "SK",
-                sk: "EX#bench_press",
-            },
-            {
-                Best1RM: expect.closeTo(116.67, 2),
+        const exerciseStats = await get(
+            exerciseKey(userId, "bench_press"),
+            USER_STATS_TABLE,
+        );
+        expect(exerciseStats?.Best1RM as number).toBeCloseTo(116.67, 2);
+        expect(exerciseStats).toEqual(
+            expect.objectContaining({
                 BestVolume: 500,
                 BestWeight: 100,
-            },
-            "user-stats",
+            }),
         );
-        expect(mockedAdd).toHaveBeenCalledWith(
-            {
-                pkName: "UserId",
-                pk: userId,
-                skName: "SK",
-                sk: "STAT#TOTAL",
-            },
-            {
+
+        await expect(get(totalKey(userId), USER_STATS_TABLE)).resolves.toEqual(
+            expect.objectContaining({
                 TotalWorkouts: 1,
                 TotalVolume: 500,
                 TotalReps: 5,
-            },
-            "user-stats",
+            }),
         );
     });
 
     it("calculates body-weight exercise stats using MaxReps", async () => {
+        const userId = newTestUser();
         const sessions = [
             {
                 userId,
@@ -159,23 +167,20 @@ describe("calculateSessionStats", () => {
 
         await calculateSessionStats(sessions as any);
 
-        expect(mockedUpdate).toHaveBeenCalledWith(
-            expect.anything(),
-            { MaxReps: 12 },
-            "user-stats",
-        );
-        expect(mockedAdd).toHaveBeenCalledWith(
-            expect.anything(),
-            {
+        await expect(
+            get(exerciseKey(userId, "pull_up"), USER_STATS_TABLE),
+        ).resolves.toEqual(expect.objectContaining({ MaxReps: 12 }));
+        await expect(get(totalKey(userId), USER_STATS_TABLE)).resolves.toEqual(
+            expect.objectContaining({
                 TotalWorkouts: 1,
                 TotalVolume: 0,
                 TotalReps: 12,
-            },
-            "user-stats",
+            }),
         );
     });
 
     it("normalizes lowercase 'sets'", async () => {
+        const userId = newTestUser();
         const sessions = [
             {
                 userId,
@@ -189,21 +194,23 @@ describe("calculateSessionStats", () => {
 
         await calculateSessionStats(sessions as any);
 
-        expect(mockedUpdate).toHaveBeenCalledWith(
-            expect.anything(),
-            expect.objectContaining({ BestWeight: 140 }),
-            "user-stats",
-        );
+        await expect(
+            get(exerciseKey(userId, "deadlift"), USER_STATS_TABLE),
+        ).resolves.toEqual(expect.objectContaining({ BestWeight: 140 }));
     });
 
     it("keeps existing personal bests when the session does not exceed them", async () => {
-        mockedGet.mockResolvedValue({
-            UserId: userId,
-            SK: "EX#squat",
-            Best1RM: 200,
-            BestVolume: 1000,
-            BestWeight: 200,
-        });
+        const userId = newTestUser();
+        await put(
+            {
+                UserId: userId,
+                SK: "EX#squat",
+                Best1RM: 200,
+                BestVolume: 1000,
+                BestWeight: 200,
+            },
+            USER_STATS_TABLE,
+        );
 
         const sessions = [
             {
@@ -218,18 +225,19 @@ describe("calculateSessionStats", () => {
 
         await calculateSessionStats(sessions as any);
 
-        expect(mockedUpdate).toHaveBeenCalledWith(
-            expect.anything(),
-            {
+        await expect(
+            get(exerciseKey(userId, "squat"), USER_STATS_TABLE),
+        ).resolves.toEqual(
+            expect.objectContaining({
                 Best1RM: 200,
                 BestVolume: 1000,
                 BestWeight: 200,
-            },
-            "user-stats",
+            }),
         );
     });
 
     it("handles multiple exercises in one session", async () => {
+        const userId = newTestUser();
         const sessions = [
             {
                 userId,
@@ -246,15 +254,18 @@ describe("calculateSessionStats", () => {
 
         await calculateSessionStats(sessions as any);
 
-        expect(mockedUpdate).toHaveBeenCalledTimes(2);
-        expect(mockedAdd).toHaveBeenCalledWith(
-            expect.anything(),
-            {
+        await expect(
+            get(exerciseKey(userId, "squat"), USER_STATS_TABLE),
+        ).resolves.not.toBeNull();
+        await expect(
+            get(exerciseKey(userId, "pull_up"), USER_STATS_TABLE),
+        ).resolves.not.toBeNull();
+        await expect(get(totalKey(userId), USER_STATS_TABLE)).resolves.toEqual(
+            expect.objectContaining({
                 TotalWorkouts: 1,
                 TotalVolume: 500,
                 TotalReps: 15,
-            },
-            "user-stats",
+            }),
         );
     });
 });

@@ -1,39 +1,41 @@
-import { jest } from "@jest/globals";
-
-jest.unstable_mockModule("../../shared/services/db-client.service.js", () => ({
-    query: jest.fn(),
-}));
-
-const { checkActiveSession } = await import("./check-active-session.helper.js");
-const { query } = await import("../../shared/services/db-client.service.js");
-const mockedQuery = query as jest.MockedFunction<typeof query>;
+import crypto from "crypto";
+import { checkActiveSession } from "./check-active-session.helper.js";
+import { put } from "../../shared/services/db-client.service.js";
+import {
+    ACTIVE_SESSIONS_TABLE,
+    cleanupUser,
+    makeTestUserId,
+    ttlSoon,
+} from "../../../test-utils/aws.js";
 
 describe("checkActiveSession", () => {
-    beforeEach(() => {
-        jest.resetAllMocks();
+    const userId = makeTestUserId();
+
+    afterAll(async () => {
+        await cleanupUser(userId);
     });
 
     it("returns true when an active session exists", async () => {
-        mockedQuery.mockResolvedValue([
-            { UserId: "user-123", SessionId: "session-1" },
-        ] as any);
+        await put(
+            {
+                UserId: userId,
+                SessionId: crypto.randomUUID(),
+                TimeToExist: ttlSoon(),
+            },
+            ACTIVE_SESSIONS_TABLE,
+        );
 
-        await expect(checkActiveSession("user-123")).resolves.toEqual({
-            userId: "user-123",
+        await expect(checkActiveSession(userId)).resolves.toEqual({
+            userId,
             hasActiveSession: true,
         });
-        expect(mockedQuery).toHaveBeenCalledWith(
-            { pkName: "UserId", pk: "user-123" },
-            "active-sessions",
-            { limit: 1 },
-        );
     });
 
     it("returns false when no active session exists", async () => {
-        mockedQuery.mockResolvedValue([] as any);
+        const freshUserId = makeTestUserId();
 
-        await expect(checkActiveSession("user-123")).resolves.toEqual({
-            userId: "user-123",
+        await expect(checkActiveSession(freshUserId)).resolves.toEqual({
+            userId: freshUserId,
             hasActiveSession: false,
         });
     });

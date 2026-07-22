@@ -1,50 +1,39 @@
-import { jest } from "@jest/globals";
-
-jest.unstable_mockModule("../../shared/services/db-client.service.js", () => ({
-    query: jest.fn(),
-}));
-
-const { getStatsLogic } = await import("./get-stats.helper.js");
-const { query } = await import("../../shared/services/db-client.service.js");
-
-const mockedQuery = query as jest.MockedFunction<typeof query>;
+import { getStatsLogic } from "./get-stats.helper.js";
+import { put } from "../../shared/services/db-client.service.js";
+import {
+    USER_STATS_TABLE,
+    cleanupUser,
+    makeTestUserId,
+} from "../../../test-utils/aws.js";
 
 describe("getStatsLogic", () => {
-    const userId = "user-123";
+    const userId = makeTestUserId();
 
-    beforeEach(() => {
-        jest.resetAllMocks();
+    afterAll(async () => {
+        await cleanupUser(userId);
     });
 
     it("returns total and exercise stats partitioned by SK", async () => {
-        mockedQuery.mockResolvedValue([
+        await put(
             {
                 UserId: userId,
                 SK: "STAT#TOTAL",
                 TotalWorkouts: 5,
                 TotalVolume: 10000,
             },
-            {
-                UserId: userId,
-                SK: "EX#bench_press",
-                Best1RM: 150,
-            },
-            {
-                UserId: userId,
-                SK: "EX#squat",
-                Best1RM: 200,
-            },
-        ]);
+            USER_STATS_TABLE,
+        );
+        await put(
+            { UserId: userId, SK: "EX#bench_press", Best1RM: 150 },
+            USER_STATS_TABLE,
+        );
+        await put(
+            { UserId: userId, SK: "EX#squat", Best1RM: 200 },
+            USER_STATS_TABLE,
+        );
 
         const result = await getStatsLogic(userId);
 
-        expect(mockedQuery).toHaveBeenCalledWith(
-            {
-                pkName: "UserId",
-                pk: userId,
-            },
-            "user-stats",
-        );
         expect(result).toEqual({
             total: { TotalWorkouts: 5, TotalVolume: 10000 },
             exercises: {
@@ -55,9 +44,7 @@ describe("getStatsLogic", () => {
     });
 
     it("returns empty objects when no stats exist", async () => {
-        mockedQuery.mockResolvedValue([]);
-
-        const result = await getStatsLogic(userId);
+        const result = await getStatsLogic(makeTestUserId());
 
         expect(result).toEqual({ total: {}, exercises: {} });
     });

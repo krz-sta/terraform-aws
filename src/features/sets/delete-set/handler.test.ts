@@ -1,15 +1,12 @@
-import { jest } from "@jest/globals";
-
-jest.unstable_mockModule("./delete-set.helper.js", () => ({
-    deleteSetLogic: jest.fn(),
-}));
-
-const { handler } = await import("./handler.js");
-const { deleteSetLogic } = await import("./delete-set.helper.js");
-
-const mockedDeleteSetLogic = deleteSetLogic as jest.MockedFunction<
-    typeof deleteSetLogic
->;
+import crypto from "crypto";
+import { handler } from "./handler.js";
+import { get, put } from "../../shared/services/db-client.service.js";
+import {
+    ACTIVE_SESSIONS_TABLE,
+    cleanupUser,
+    makeTestUserId,
+    ttlSoon,
+} from "../../../test-utils/aws.js";
 
 function makeEvent(body: Record<string, unknown>) {
     return {
@@ -29,17 +26,30 @@ function makeEvent(body: Record<string, unknown>) {
 const invoke = (event: any): any => handler(event, {} as any, undefined as any);
 
 describe("delete-set handler", () => {
-    beforeEach(() => {
-        jest.resetAllMocks();
+    const userId = makeTestUserId();
+
+    afterAll(async () => {
+        await cleanupUser(userId);
     });
 
     it("returns 200 on success", async () => {
-        mockedDeleteSetLogic.mockResolvedValue(undefined);
+        const sessionId = crypto.randomUUID();
+        await put(
+            {
+                UserId: userId,
+                SessionId: sessionId,
+                Exercises: {
+                    bench_press: { Sets: [{ weight: 100, reps: 5 }] },
+                },
+                TimeToExist: ttlSoon(),
+            },
+            ACTIVE_SESSIONS_TABLE,
+        );
 
         const response = await invoke(
             makeEvent({
-                userId: "user-123",
-                sessionId: "session-456",
+                userId,
+                sessionId,
                 exerciseName: "bench_press",
                 setIndex: 0,
             }),
@@ -49,25 +59,31 @@ describe("delete-set handler", () => {
         expect(JSON.parse(response.body)).toEqual({
             message: "Set deleted successfully.",
         });
-        expect(mockedDeleteSetLogic).toHaveBeenCalledWith(
-            "user-123",
-            "session-456",
-            "bench_press",
-            0,
+
+        const stored = await get(
+            {
+                pkName: "UserId",
+                pk: userId,
+                skName: "SessionId",
+                sk: sessionId,
+            },
+            ACTIVE_SESSIONS_TABLE,
         );
+        expect(stored?.Exercises).toEqual({
+            bench_press: { Sets: [] },
+        });
     });
 
     it("returns 400 for negative setIndex", async () => {
         const response = await invoke(
             makeEvent({
-                userId: "user-123",
-                sessionId: "session-456",
+                userId,
+                sessionId: crypto.randomUUID(),
                 exerciseName: "bench_press",
                 setIndex: -1,
             }),
         );
 
         expect(response.statusCode).toBe(400);
-        expect(mockedDeleteSetLogic).not.toHaveBeenCalled();
     });
 });

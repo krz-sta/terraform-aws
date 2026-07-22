@@ -1,21 +1,20 @@
-import { jest } from "@jest/globals";
-
-jest.unstable_mockModule("../../shared/services/db-client.service.js", () => ({
-    get: jest.fn(),
-}));
-
-const { getSessionLogic } = await import("./get-session.helper.js");
-const { get } = await import("../../shared/services/db-client.service.js");
-const { NotFoundError } = await import("../../shared/helpers/error.helper.js");
-
-const mockedGet = get as jest.MockedFunction<typeof get>;
+import crypto from "crypto";
+import { getSessionLogic } from "./get-session.helper.js";
+import { put } from "../../shared/services/db-client.service.js";
+import { NotFoundError } from "../../shared/helpers/error.helper.js";
+import {
+    ACTIVE_SESSIONS_TABLE,
+    cleanupUser,
+    makeTestUserId,
+    ttlSoon,
+} from "../../../test-utils/aws.js";
 
 describe("getSessionLogic", () => {
-    const userId = "user-123";
-    const sessionId = "session-456";
+    const userId = makeTestUserId();
+    const sessionId = crypto.randomUUID();
 
-    beforeEach(() => {
-        jest.resetAllMocks();
+    afterAll(async () => {
+        await cleanupUser(userId);
     });
 
     it("returns the session when it exists", async () => {
@@ -23,28 +22,18 @@ describe("getSessionLogic", () => {
             UserId: userId,
             SessionId: sessionId,
             StartTime: "2026-07-13T08:00:00.000Z",
+            TimeToExist: ttlSoon(),
         };
-        mockedGet.mockResolvedValue(session);
+        await put(session, ACTIVE_SESSIONS_TABLE);
 
         const result = await getSessionLogic(userId, sessionId);
 
         expect(result).toEqual(session);
-        expect(mockedGet).toHaveBeenCalledWith(
-            {
-                pkName: "UserId",
-                pk: userId,
-                skName: "SessionId",
-                sk: sessionId,
-            },
-            "active-sessions",
-        );
     });
 
     it("throws NotFoundError when the session does not exist", async () => {
-        mockedGet.mockResolvedValue(null);
-
-        await expect(getSessionLogic(userId, sessionId)).rejects.toBeInstanceOf(
-            NotFoundError,
-        );
+        await expect(
+            getSessionLogic(userId, crypto.randomUUID()),
+        ).rejects.toBeInstanceOf(NotFoundError);
     });
 });

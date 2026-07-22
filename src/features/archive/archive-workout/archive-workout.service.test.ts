@@ -1,82 +1,43 @@
-import { jest } from "@jest/globals";
-
-const mockedSend = jest.fn<any>();
-const mockedAppendRow = jest.fn<any>();
-const mockedClose = jest.fn<any>();
-const mockedOpenFile = jest.fn<any>();
-const mockedReadFileSync = jest.fn<any>();
-const mockedExistsSync = jest.fn<any>();
-const mockedUnlinkSync = jest.fn<any>();
-
-jest.unstable_mockModule("@aws-sdk/client-s3", () => ({
-    S3Client: jest.fn(() => ({ send: mockedSend })),
-    PutObjectCommand: jest.fn((input) => input),
-}));
-
-jest.unstable_mockModule("@dsnp/parquetjs", () => ({
-    ParquetSchema: jest.fn(),
-    ParquetWriter: {
-        openFile: mockedOpenFile,
-    },
-}));
-
-jest.unstable_mockModule("fs", () => ({
-    default: {
-        readFileSync: mockedReadFileSync,
-        existsSync: mockedExistsSync,
-        unlinkSync: mockedUnlinkSync,
-    },
-    readFileSync: mockedReadFileSync,
-    existsSync: mockedExistsSync,
-    unlinkSync: mockedUnlinkSync,
-}));
-
-const { saveWorkoutSnapshot } = await import("./archive-workout.service.js");
-const { PutObjectCommand } = await import("@aws-sdk/client-s3");
+import crypto from "crypto";
+import { GetObjectCommand } from "@aws-sdk/client-s3";
+import { saveWorkoutSnapshot } from "./archive-workout.service.js";
+import {
+    ARCHIVE_BUCKET,
+    cleanupUser,
+    makeTestUserId,
+    s3TestClient,
+} from "../../../test-utils/aws.js";
 
 describe("saveWorkoutSnapshot", () => {
-    const workout = {
-        UserId: "user-123",
-        SessionId: "session-456",
-        StartTime: "2026-07-13T08:00:00.000Z",
-        EndTime: "2026-07-13T09:00:00.000Z",
-        TimeToExist: 1234567890,
-        Exercises: { bench_press: { Sets: [{ weight: 100, reps: 5 }] } },
-    };
+    const userId = makeTestUserId();
 
-    beforeEach(() => {
-        jest.resetAllMocks();
-        mockedOpenFile.mockResolvedValue({
-            appendRow: mockedAppendRow,
-            close: mockedClose,
-        });
-        mockedReadFileSync.mockReturnValue(Buffer.from("parquet-data"));
-        mockedExistsSync.mockReturnValue(true);
-        mockedSend.mockResolvedValue(undefined);
+    afterAll(async () => {
+        await cleanupUser(userId);
     });
 
-    it("builds a parquet buffer and uploads it to S3", async () => {
-        await saveWorkoutSnapshot(
-            "user-123/2026/7/13/session-456.parquet",
-            workout,
-        );
+    it("builds a parquet file and uploads it to S3", async () => {
+        const sessionId = crypto.randomUUID();
+        const fileKey = `${userId}/2026/7/13/${sessionId}.parquet`;
+        const workout = {
+            UserId: userId,
+            SessionId: sessionId,
+            StartTime: "2026-07-13T08:00:00.000Z",
+            EndTime: "2026-07-13T09:00:00.000Z",
+            TimeToExist: 1234567890,
+            Exercises: { bench_press: { Sets: [{ weight: 100, reps: 5 }] } },
+        };
 
-        expect(mockedAppendRow).toHaveBeenCalledWith(
-            expect.objectContaining({
-                UserId: "user-123",
-                SessionId: "session-456",
-                ExercisesJson: JSON.stringify(workout.Exercises),
+        await saveWorkoutSnapshot(fileKey, workout);
+
+        const object = await s3TestClient.send(
+            new GetObjectCommand({
+                Bucket: ARCHIVE_BUCKET,
+                Key: fileKey,
             }),
         );
-        expect(mockedClose).toHaveBeenCalled();
-        expect(mockedUnlinkSync).toHaveBeenCalled();
-        expect(mockedSend).toHaveBeenCalled();
-        expect(PutObjectCommand).toHaveBeenCalledWith(
-            expect.objectContaining({
-                Bucket: "workouts-archive",
-                Key: "user-123/2026/7/13/session-456.parquet",
-                ContentType: "application/octet-stream",
-            }),
-        );
+        expect(object.ContentType).toBe("application/octet-stream");
+
+        const body = Buffer.from(await object.Body!.transformToByteArray());
+        expect(body.subarray(0, 4).toString()).toBe("PAR1");
     });
 });

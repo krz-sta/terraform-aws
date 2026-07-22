@@ -1,70 +1,69 @@
-import { jest } from "@jest/globals";
-
-jest.unstable_mockModule("../../shared/services/db-client.service.js", () => ({
-    get: jest.fn(),
-    update: jest.fn(),
-}));
-
-const { deleteExerciseLogic } = await import("./delete-exercise.helper.js");
-const { get, update } =
-    await import("../../shared/services/db-client.service.js");
-const { NotFoundError } = await import("../../shared/helpers/error.helper.js");
-
-const mockedGet = get as jest.MockedFunction<typeof get>;
-const mockedUpdate = update as jest.MockedFunction<typeof update>;
+import crypto from "crypto";
+import { deleteExerciseLogic } from "./delete-exercise.helper.js";
+import { get, put } from "../../shared/services/db-client.service.js";
+import { NotFoundError } from "../../shared/helpers/error.helper.js";
+import {
+    ACTIVE_SESSIONS_TABLE,
+    cleanupUser,
+    makeTestUserId,
+    ttlSoon,
+} from "../../../test-utils/aws.js";
 
 describe("deleteExerciseLogic", () => {
-    const userId = "user-123";
-    const sessionId = "session-456";
+    const userId = makeTestUserId();
     const exerciseName = "bench_press";
 
-    beforeEach(() => {
-        jest.resetAllMocks();
+    afterAll(async () => {
+        await cleanupUser(userId);
     });
 
-    it("removes the exercise from the session", async () => {
-        mockedGet.mockResolvedValue({
-            UserId: userId,
-            SessionId: sessionId,
-            Exercises: {
-                [exerciseName]: { Sets: [] },
-                squat: { Sets: [{ weight: 100, reps: 5 }] },
+    async function seedSession(exercises: Record<string, unknown>) {
+        const sessionId = crypto.randomUUID();
+        await put(
+            {
+                UserId: userId,
+                SessionId: sessionId,
+                Exercises: exercises,
+                TimeToExist: ttlSoon(),
             },
+            ACTIVE_SESSIONS_TABLE,
+        );
+        return sessionId;
+    }
+
+    it("removes the exercise from the session", async () => {
+        const sessionId = await seedSession({
+            [exerciseName]: { Sets: [] },
+            squat: { Sets: [{ weight: 100, reps: 5 }] },
         });
-        mockedUpdate.mockResolvedValue(undefined);
 
         await deleteExerciseLogic(userId, sessionId, exerciseName);
 
-        expect(mockedUpdate).toHaveBeenCalledWith(
-            expect.anything(),
+        const stored = await get(
             {
-                Exercises: {
-                    squat: { Sets: [{ weight: 100, reps: 5 }] },
-                },
+                pkName: "UserId",
+                pk: userId,
+                skName: "SessionId",
+                sk: sessionId,
             },
-            "active-sessions",
+            ACTIVE_SESSIONS_TABLE,
         );
+        expect(stored?.Exercises).toEqual({
+            squat: { Sets: [{ weight: 100, reps: 5 }] },
+        });
     });
 
     it("throws NotFoundError when the session does not exist", async () => {
-        mockedGet.mockResolvedValue(null);
-
         await expect(
-            deleteExerciseLogic(userId, sessionId, exerciseName),
+            deleteExerciseLogic(userId, crypto.randomUUID(), exerciseName),
         ).rejects.toBeInstanceOf(NotFoundError);
-        expect(mockedUpdate).not.toHaveBeenCalled();
     });
 
     it("throws NotFoundError when the exercise does not exist", async () => {
-        mockedGet.mockResolvedValue({
-            UserId: userId,
-            SessionId: sessionId,
-            Exercises: {},
-        });
+        const sessionId = await seedSession({});
 
         await expect(
             deleteExerciseLogic(userId, sessionId, exerciseName),
         ).rejects.toBeInstanceOf(NotFoundError);
-        expect(mockedUpdate).not.toHaveBeenCalled();
     });
 });

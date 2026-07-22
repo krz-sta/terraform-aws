@@ -1,72 +1,79 @@
-import { jest } from "@jest/globals";
-
-jest.unstable_mockModule("../../shared/services/db-client.service.js", () => ({
-    get: jest.fn(),
-    update: jest.fn(),
-}));
-
-const { updateSetLogic } = await import("./update-set.helper.js");
-const { get, update } =
-    await import("../../shared/services/db-client.service.js");
-const { NotFoundError } = await import("../../shared/helpers/error.helper.js");
-
-const mockedGet = get as jest.MockedFunction<typeof get>;
-const mockedUpdate = update as jest.MockedFunction<typeof update>;
+import crypto from "crypto";
+import { updateSetLogic } from "./update-set.helper.js";
+import { get, put } from "../../shared/services/db-client.service.js";
+import { NotFoundError } from "../../shared/helpers/error.helper.js";
+import {
+    ACTIVE_SESSIONS_TABLE,
+    cleanupUser,
+    makeTestUserId,
+    ttlSoon,
+} from "../../../test-utils/aws.js";
 
 describe("updateSetLogic", () => {
-    const userId = "user-123";
-    const sessionId = "session-456";
+    const userId = makeTestUserId();
     const exerciseName = "bench_press";
     const setData = { weight: 110, reps: 4 };
 
-    beforeEach(() => {
-        jest.resetAllMocks();
+    afterAll(async () => {
+        await cleanupUser(userId);
     });
 
+    async function seedSession(exercises: Record<string, unknown>) {
+        const sessionId = crypto.randomUUID();
+        await put(
+            {
+                UserId: userId,
+                SessionId: sessionId,
+                Exercises: exercises,
+                TimeToExist: ttlSoon(),
+            },
+            ACTIVE_SESSIONS_TABLE,
+        );
+        return sessionId;
+    }
+
     it("replaces the set at the given index", async () => {
-        mockedGet.mockResolvedValue({
-            UserId: userId,
-            SessionId: sessionId,
-            Exercises: {
-                [exerciseName]: {
-                    Sets: [
-                        { weight: 100, reps: 5 },
-                        { weight: 90, reps: 6 },
-                    ],
-                },
+        const sessionId = await seedSession({
+            [exerciseName]: {
+                Sets: [
+                    { weight: 100, reps: 5 },
+                    { weight: 90, reps: 6 },
+                ],
             },
         });
-        mockedUpdate.mockResolvedValue(undefined);
 
         await updateSetLogic(userId, sessionId, exerciseName, 0, setData);
 
-        expect(mockedUpdate).toHaveBeenCalledWith(
-            expect.anything(),
+        const stored = await get(
             {
-                Exercises: {
-                    [exerciseName]: {
-                        Sets: [setData, { weight: 90, reps: 6 }],
-                    },
-                },
+                pkName: "UserId",
+                pk: userId,
+                skName: "SessionId",
+                sk: sessionId,
             },
-            "active-sessions",
+            ACTIVE_SESSIONS_TABLE,
         );
+        expect(stored?.Exercises).toEqual({
+            [exerciseName]: {
+                Sets: [setData, { weight: 90, reps: 6 }],
+            },
+        });
     });
 
     it("throws NotFoundError when the session does not exist", async () => {
-        mockedGet.mockResolvedValue(null);
-
         await expect(
-            updateSetLogic(userId, sessionId, exerciseName, 0, setData),
+            updateSetLogic(
+                userId,
+                crypto.randomUUID(),
+                exerciseName,
+                0,
+                setData,
+            ),
         ).rejects.toBeInstanceOf(NotFoundError);
     });
 
     it("throws NotFoundError when the exercise does not exist", async () => {
-        mockedGet.mockResolvedValue({
-            UserId: userId,
-            SessionId: sessionId,
-            Exercises: {},
-        });
+        const sessionId = await seedSession({});
 
         await expect(
             updateSetLogic(userId, sessionId, exerciseName, 0, setData),
@@ -74,12 +81,8 @@ describe("updateSetLogic", () => {
     });
 
     it("throws NotFoundError when the set index does not exist", async () => {
-        mockedGet.mockResolvedValue({
-            UserId: userId,
-            SessionId: sessionId,
-            Exercises: {
-                [exerciseName]: { Sets: [{ weight: 100, reps: 5 }] },
-            },
+        const sessionId = await seedSession({
+            [exerciseName]: { Sets: [{ weight: 100, reps: 5 }] },
         });
 
         await expect(

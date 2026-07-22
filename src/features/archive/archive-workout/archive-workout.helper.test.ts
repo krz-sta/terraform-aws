@@ -1,15 +1,15 @@
-import { jest } from "@jest/globals";
-
-jest.unstable_mockModule("./archive-workout.service.js", () => ({
-    saveWorkoutSnapshot: jest.fn(),
-}));
-
-const { archiveWorkoutSnapshots, collectWorkoutSnapshots } =
-    await import("./archive-workout.helper.js");
-const { saveWorkoutSnapshot } = await import("./archive-workout.service.js");
-const mockedSaveWorkoutSnapshot = saveWorkoutSnapshot as jest.MockedFunction<
-    typeof saveWorkoutSnapshot
->;
+import crypto from "crypto";
+import { HeadObjectCommand } from "@aws-sdk/client-s3";
+import {
+    archiveWorkoutSnapshots,
+    collectWorkoutSnapshots,
+} from "./archive-workout.helper.js";
+import {
+    ARCHIVE_BUCKET,
+    cleanupUser,
+    makeTestUserId,
+    s3TestClient,
+} from "../../../test-utils/aws.js";
 
 const snapshot = {
     UserId: "user-123",
@@ -21,8 +21,10 @@ const snapshot = {
 };
 
 describe("archive workout helpers", () => {
-    beforeEach(() => {
-        jest.resetAllMocks();
+    const userId = makeTestUserId();
+
+    afterAll(async () => {
+        await cleanupUser(userId);
     });
 
     it("extracts a workout snapshot from an SNS-wrapped DynamoDB event", () => {
@@ -60,14 +62,23 @@ describe("archive workout helpers", () => {
         expect(collectWorkoutSnapshots(event)).toEqual([snapshot]);
     });
 
-    it("builds the user-scoped archive key", async () => {
-        mockedSaveWorkoutSnapshot.mockResolvedValue(undefined);
+    it("archives the snapshot under the user-scoped key", async () => {
+        const sessionId = crypto.randomUUID();
+        const testSnapshot = {
+            ...snapshot,
+            UserId: userId,
+            SessionId: sessionId,
+        };
 
-        await archiveWorkoutSnapshots([snapshot]);
+        await archiveWorkoutSnapshots([testSnapshot]);
 
-        expect(mockedSaveWorkoutSnapshot).toHaveBeenCalledWith(
-            "user-123/2026/7/13/session-456.parquet",
-            snapshot,
-        );
+        await expect(
+            s3TestClient.send(
+                new HeadObjectCommand({
+                    Bucket: ARCHIVE_BUCKET,
+                    Key: `${userId}/2026/7/13/${sessionId}.parquet`,
+                }),
+            ),
+        ).resolves.toBeDefined();
     });
 });

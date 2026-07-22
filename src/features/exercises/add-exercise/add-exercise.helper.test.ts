@@ -1,78 +1,74 @@
-import { jest } from "@jest/globals";
-
-jest.unstable_mockModule("../../shared/services/db-client.service.js", () => ({
-    get: jest.fn(),
-    update: jest.fn(),
-}));
-
-const { addExerciseLogic } = await import("./add-exercise.helper.js");
-const { get, update } =
-    await import("../../shared/services/db-client.service.js");
-const { ConflictError, NotFoundError } =
-    await import("../../shared/helpers/error.helper.js");
-
-const mockedGet = get as jest.MockedFunction<typeof get>;
-const mockedUpdate = update as jest.MockedFunction<typeof update>;
+import crypto from "crypto";
+import { addExerciseLogic } from "./add-exercise.helper.js";
+import { get, put } from "../../shared/services/db-client.service.js";
+import {
+    ConflictError,
+    NotFoundError,
+} from "../../shared/helpers/error.helper.js";
+import {
+    ACTIVE_SESSIONS_TABLE,
+    cleanupUser,
+    makeTestUserId,
+    ttlSoon,
+} from "../../../test-utils/aws.js";
 
 describe("addExerciseLogic", () => {
-    const userId = "user-123";
-    const sessionId = "session-456";
+    const userId = makeTestUserId();
     const exerciseName = "bench_press";
 
-    beforeEach(() => {
-        jest.resetAllMocks();
+    afterAll(async () => {
+        await cleanupUser(userId);
     });
 
-    it("keeps existing exercises when adding a new one", async () => {
-        mockedGet.mockResolvedValue({
-            UserId: userId,
-            SessionId: sessionId,
-            Exercises: {
-                squat: { Sets: [{ weight: 100, reps: 5 }] },
+    async function seedSession(exercises: Record<string, unknown>) {
+        const sessionId = crypto.randomUUID();
+        await put(
+            {
+                UserId: userId,
+                SessionId: sessionId,
+                Exercises: exercises,
+                TimeToExist: ttlSoon(),
             },
+            ACTIVE_SESSIONS_TABLE,
+        );
+        return sessionId;
+    }
+
+    it("keeps existing exercises when adding a new one", async () => {
+        const sessionId = await seedSession({
+            squat: { Sets: [{ weight: 100, reps: 5 }] },
         });
-        mockedUpdate.mockResolvedValue(undefined);
 
         await addExerciseLogic(userId, sessionId, exerciseName);
 
-        expect(mockedUpdate).toHaveBeenCalledWith(
+        const stored = await get(
             {
                 pkName: "UserId",
                 pk: userId,
                 skName: "SessionId",
                 sk: sessionId,
             },
-            {
-                Exercises: {
-                    squat: { Sets: [{ weight: 100, reps: 5 }] },
-                    [exerciseName]: { Sets: [] },
-                },
-            },
-            "active-sessions",
+            ACTIVE_SESSIONS_TABLE,
         );
+        expect(stored?.Exercises).toEqual({
+            squat: { Sets: [{ weight: 100, reps: 5 }] },
+            [exerciseName]: { Sets: [] },
+        });
     });
 
     it("throws NotFoundError when the session does not exist", async () => {
-        mockedGet.mockResolvedValue(null);
-
         await expect(
-            addExerciseLogic(userId, sessionId, exerciseName),
+            addExerciseLogic(userId, crypto.randomUUID(), exerciseName),
         ).rejects.toBeInstanceOf(NotFoundError);
-        expect(mockedUpdate).not.toHaveBeenCalled();
     });
 
     it("throws ConflictError when the exercise already exists", async () => {
-        mockedGet.mockResolvedValue({
-            UserId: userId,
-            SessionId: sessionId,
-            Exercises: {
-                [exerciseName]: { Sets: [] },
-            },
+        const sessionId = await seedSession({
+            [exerciseName]: { Sets: [] },
         });
 
         await expect(
             addExerciseLogic(userId, sessionId, exerciseName),
         ).rejects.toBeInstanceOf(ConflictError);
-        expect(mockedUpdate).not.toHaveBeenCalled();
     });
 });

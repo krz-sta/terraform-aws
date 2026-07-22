@@ -1,45 +1,49 @@
-import { jest } from "@jest/globals";
-
-jest.unstable_mockModule("./save-session.service.js", () => ({
-    saveSession: jest.fn(),
-}));
-
-jest.unstable_mockModule("../../shared/services/db-client.service.js", () => ({
-    get: jest.fn(),
-}));
-
-const { saveSessionLogic } = await import("./save-session.helper.js");
-const { saveSession } = await import("./save-session.service.js");
-const { get } = await import("../../shared/services/db-client.service.js");
-const { NotFoundError } = await import("../../shared/helpers/error.helper.js");
-
-const mockedGet = get as jest.MockedFunction<typeof get>;
-const mockedSaveSession = saveSession as jest.MockedFunction<
-    typeof saveSession
->;
+import crypto from "crypto";
+import { saveSessionLogic } from "./save-session.helper.js";
+import { get, put } from "../../shared/services/db-client.service.js";
+import { NotFoundError } from "../../shared/helpers/error.helper.js";
+import {
+    ACTIVE_SESSIONS_TABLE,
+    SESSION_HISTORY_TABLE,
+    cleanupUser,
+    makeTestUserId,
+    sleep,
+    ttlSoon,
+} from "../../../test-utils/aws.js";
 
 describe("saveSessionLogic", () => {
-    const userId = "user-123";
-    const sessionId = "session-456";
+    const userId = makeTestUserId();
 
-    beforeEach(() => {
-        jest.resetAllMocks();
+    afterAll(async () => {
+        await sleep(5000);
+        await cleanupUser(userId);
     });
 
     it("saves an active session to history and deletes the active record", async () => {
-        mockedGet.mockResolvedValue({
-            UserId: userId,
-            SessionId: sessionId,
-            Exercises: {
-                bench_press: { Sets: [{ weight: 100, reps: 5 }] },
+        const sessionId = crypto.randomUUID();
+        await put(
+            {
+                UserId: userId,
+                SessionId: sessionId,
+                Exercises: {
+                    bench_press: { Sets: [{ weight: 100, reps: 5 }] },
+                },
+                StartTime: "2026-07-13T08:00:00.000Z",
+                TimeToExist: ttlSoon(),
             },
-            StartTime: "2026-07-13T08:00:00.000Z",
-        });
-        mockedSaveSession.mockResolvedValue(undefined);
+            ACTIVE_SESSIONS_TABLE,
+        );
 
         await saveSessionLogic(userId, sessionId);
 
-        expect(mockedSaveSession).toHaveBeenCalledWith(
+        const historyKey = {
+            pkName: "UserId",
+            pk: userId,
+            skName: "SessionId",
+            sk: sessionId,
+        };
+        const historyItem = await get(historyKey, SESSION_HISTORY_TABLE);
+        expect(historyItem).toEqual(
             expect.objectContaining({
                 UserId: userId,
                 SessionId: sessionId,
@@ -51,18 +55,35 @@ describe("saveSessionLogic", () => {
                 },
             }),
         );
+
+        const activeItem = await get(historyKey, ACTIVE_SESSIONS_TABLE);
+        expect(activeItem).toBeNull();
     });
 
     it("uses an empty exercises map when the session has no exercises", async () => {
-        mockedGet.mockResolvedValue({
-            UserId: userId,
-            SessionId: sessionId,
-        });
-        mockedSaveSession.mockResolvedValue(undefined);
+        const sessionId = crypto.randomUUID();
+        await put(
+            {
+                UserId: userId,
+                SessionId: sessionId,
+                StartTime: "2026-07-13T08:00:00.000Z",
+                TimeToExist: ttlSoon(),
+            },
+            ACTIVE_SESSIONS_TABLE,
+        );
 
         await saveSessionLogic(userId, sessionId);
 
-        expect(mockedSaveSession).toHaveBeenCalledWith(
+        const historyItem = await get(
+            {
+                pkName: "UserId",
+                pk: userId,
+                skName: "SessionId",
+                sk: sessionId,
+            },
+            SESSION_HISTORY_TABLE,
+        );
+        expect(historyItem).toEqual(
             expect.objectContaining({
                 Exercises: {},
             }),
@@ -70,11 +91,8 @@ describe("saveSessionLogic", () => {
     });
 
     it("throws NotFoundError when the active session does not exist", async () => {
-        mockedGet.mockResolvedValue(null);
-
         await expect(
-            saveSessionLogic(userId, sessionId),
+            saveSessionLogic(userId, crypto.randomUUID()),
         ).rejects.toBeInstanceOf(NotFoundError);
-        expect(mockedSaveSession).not.toHaveBeenCalled();
     });
 });

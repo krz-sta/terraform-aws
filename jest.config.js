@@ -2,6 +2,7 @@
 export default {
     preset: "ts-jest/presets/default-esm",
     testEnvironment: "node",
+    testTimeout: 30000,
     setupFiles: ["<rootDir>/jest.setup.js"],
     extensionsToTreatAsEsm: [".ts"],
     modulePathIgnorePatterns: [

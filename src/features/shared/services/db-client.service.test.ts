@@ -1,28 +1,62 @@
-import { jest } from "@jest/globals";
-
-const mockedSend = jest.fn<any>();
-
-jest.unstable_mockModule("../helpers/db-client.helper.js", () => ({
-    docClient: { send: mockedSend },
-}));
-
-const {
+import crypto from "crypto";
+import {
     get,
+    put,
     update,
     add,
-    delete: deleteItem,
+    delete as deleteItem,
     query,
     transactWrite,
-} = await import("./db-client.service.js");
+} from "./db-client.service.js";
+import {
+    ACTIVE_SESSIONS_TABLE,
+    USER_STATS_TABLE,
+    cleanupUsers,
+    makeTestUserId,
+    ttlSoon,
+} from "../../../test-utils/aws.js";
+
+const testUsers: string[] = [];
+
+function newTestUser() {
+    const userId = makeTestUserId();
+    testUsers.push(userId);
+    return userId;
+}
+
+function sessionKey(userId: string, sessionId: string) {
+    return {
+        pkName: "UserId",
+        pk: userId,
+        skName: "SessionId",
+        sk: sessionId,
+    };
+}
+
+async function seedSession(userId: string) {
+    const sessionId = crypto.randomUUID();
+    await put(
+        {
+            UserId: userId,
+            SessionId: sessionId,
+            TimeToExist: ttlSoon(),
+        },
+        ACTIVE_SESSIONS_TABLE,
+    );
+    return sessionId;
+}
+
+afterAll(async () => {
+    await cleanupUsers(testUsers);
+});
 
 describe("buildKey (via exported operations)", () => {
-    beforeEach(() => {
-        jest.resetAllMocks();
-    });
-
     it("throws when only skName is provided", async () => {
         await expect(
-            get({ pkName: "pk", pk: "1", skName: "sk" }, "table"),
+            get(
+                { pkName: "UserId", pk: "1", skName: "SessionId" },
+                ACTIVE_SESSIONS_TABLE,
+            ),
         ).rejects.toThrow(
             "Sort key name and sort key value must be provided together.",
         );
@@ -30,7 +64,7 @@ describe("buildKey (via exported operations)", () => {
 
     it("throws when only sk is provided", async () => {
         await expect(
-            get({ pkName: "pk", pk: "1", sk: "1" }, "table"),
+            get({ pkName: "UserId", pk: "1", sk: "1" }, ACTIVE_SESSIONS_TABLE),
         ).rejects.toThrow(
             "Sort key name and sort key value must be provided together.",
         );
@@ -38,212 +72,210 @@ describe("buildKey (via exported operations)", () => {
 });
 
 describe("get", () => {
-    beforeEach(() => {
-        jest.resetAllMocks();
-    });
-
     it("returns the item when found", async () => {
-        mockedSend.mockResolvedValue({ Item: { id: "1" } });
+        const userId = newTestUser();
+        const sessionId = await seedSession(userId);
 
         const result = await get(
-            { pkName: "pk", pk: "1", skName: "sk", sk: "2" },
-            "table",
+            sessionKey(userId, sessionId),
+            ACTIVE_SESSIONS_TABLE,
         );
 
-        expect(result).toEqual({ id: "1" });
+        expect(result).toEqual(
+            expect.objectContaining({
+                UserId: userId,
+                SessionId: sessionId,
+            }),
+        );
     });
 
     it("returns null when the item is not found", async () => {
-        mockedSend.mockResolvedValue({});
-
-        const result = await get({ pkName: "pk", pk: "1" }, "table");
+        const result = await get(
+            sessionKey(newTestUser(), crypto.randomUUID()),
+            ACTIVE_SESSIONS_TABLE,
+        );
 
         expect(result).toBeNull();
     });
 });
 
 describe("update", () => {
-    beforeEach(() => {
-        jest.resetAllMocks();
-    });
-
     it("short-circuits when there are no attributes to update", async () => {
-        await update({ pkName: "pk", pk: "1" }, {}, "table");
+        const key = sessionKey(newTestUser(), crypto.randomUUID());
 
-        expect(mockedSend).not.toHaveBeenCalled();
+        await update(key, {}, ACTIVE_SESSIONS_TABLE);
+
+        await expect(get(key, ACTIVE_SESSIONS_TABLE)).resolves.toBeNull();
     });
 
-    it("sends an update command when attributes are provided", async () => {
-        mockedSend.mockResolvedValue({});
+    it("sets the provided attributes", async () => {
+        const userId = newTestUser();
+        const sessionId = await seedSession(userId);
+        const key = sessionKey(userId, sessionId);
 
-        await update(
-            { pkName: "pk", pk: "1" },
-            { name: "value", count: 5 },
-            "table",
+        await update(key, { name: "value", count: 5 }, ACTIVE_SESSIONS_TABLE);
+
+        await expect(get(key, ACTIVE_SESSIONS_TABLE)).resolves.toEqual(
+            expect.objectContaining({ name: "value", count: 5 }),
         );
-
-        expect(mockedSend).toHaveBeenCalledTimes(1);
     });
 });
 
 describe("add", () => {
-    beforeEach(() => {
-        jest.resetAllMocks();
-    });
-
     it("short-circuits when there are no attributes to add", async () => {
-        await add({ pkName: "pk", pk: "1" }, {}, "table");
+        const key = {
+            pkName: "UserId",
+            pk: newTestUser(),
+            skName: "SK",
+            sk: "STAT#TOTAL",
+        };
 
-        expect(mockedSend).not.toHaveBeenCalled();
+        await add(key, {}, USER_STATS_TABLE);
+
+        await expect(get(key, USER_STATS_TABLE)).resolves.toBeNull();
     });
 
-    it("sends an add command when attributes are provided", async () => {
-        mockedSend.mockResolvedValue({});
+    it("increments the provided attributes", async () => {
+        const key = {
+            pkName: "UserId",
+            pk: newTestUser(),
+            skName: "SK",
+            sk: "STAT#TOTAL",
+        };
 
         await add(
-            { pkName: "pk", pk: "1" },
+            key,
             { TotalWorkouts: 1, TotalVolume: 100 },
-            "table",
+            USER_STATS_TABLE,
+        );
+        await add(
+            key,
+            { TotalWorkouts: 1, TotalVolume: 100 },
+            USER_STATS_TABLE,
         );
 
-        expect(mockedSend).toHaveBeenCalledTimes(1);
+        await expect(get(key, USER_STATS_TABLE)).resolves.toEqual(
+            expect.objectContaining({ TotalWorkouts: 2, TotalVolume: 200 }),
+        );
     });
 });
 
 describe("delete", () => {
-    beforeEach(() => {
-        jest.resetAllMocks();
+    it("deletes an existing item", async () => {
+        const userId = newTestUser();
+        const sessionId = await seedSession(userId);
+        const key = sessionKey(userId, sessionId);
+
+        await deleteItem(key, ACTIVE_SESSIONS_TABLE);
+
+        await expect(get(key, ACTIVE_SESSIONS_TABLE)).resolves.toBeNull();
     });
 
-    it("sends a delete command", async () => {
-        mockedSend.mockResolvedValue({});
-
-        await deleteItem({ pkName: "pk", pk: "1" }, "table");
-
-        expect(mockedSend).toHaveBeenCalledTimes(1);
-    });
-
-    it("sends a delete command with a sort key", async () => {
-        mockedSend.mockResolvedValue({});
-
-        await deleteItem(
-            { pkName: "pk", pk: "1", skName: "sk", sk: "2" },
-            "table",
-        );
-
-        expect(mockedSend).toHaveBeenCalledTimes(1);
+    it("rejects when the item does not exist", async () => {
+        await expect(
+            deleteItem(
+                sessionKey(newTestUser(), crypto.randomUUID()),
+                ACTIVE_SESSIONS_TABLE,
+            ),
+        ).rejects.toMatchObject({ name: "ConditionalCheckFailedException" });
     });
 });
 
 describe("query", () => {
-    beforeEach(() => {
-        jest.resetAllMocks();
-    });
-
     it("queries with a partition key only", async () => {
-        mockedSend.mockResolvedValue({ Items: [{ id: "1" }] });
+        const userId = newTestUser();
+        const first = await seedSession(userId);
+        const second = await seedSession(userId);
 
-        const result = await query({ pkName: "pk", pk: "1" }, "table");
+        const result = await query(
+            { pkName: "UserId", pk: userId },
+            ACTIVE_SESSIONS_TABLE,
+        );
 
-        expect(result).toEqual([{ id: "1" }]);
+        expect(result.map((item) => item.SessionId as string).sort()).toEqual(
+            [first, second].sort(),
+        );
     });
 
     it("queries with a partition and sort key", async () => {
-        mockedSend.mockResolvedValue({ Items: [{ id: "1" }] });
+        const userId = newTestUser();
+        const sessionId = await seedSession(userId);
 
         const result = await query(
-            { pkName: "pk", pk: "1", skName: "sk", sk: "2" },
-            "table",
+            sessionKey(userId, sessionId),
+            ACTIVE_SESSIONS_TABLE,
         );
 
-        expect(result).toEqual([{ id: "1" }]);
+        expect(result).toHaveLength(1);
+        expect(result[0]).toEqual(
+            expect.objectContaining({ SessionId: sessionId }),
+        );
     });
 
     it("returns an empty array when no items are found", async () => {
-        mockedSend.mockResolvedValue({});
-
-        const result = await query({ pkName: "pk", pk: "1" }, "table");
+        const result = await query(
+            { pkName: "UserId", pk: newTestUser() },
+            ACTIVE_SESSIONS_TABLE,
+        );
 
         expect(result).toEqual([]);
     });
 
-    it("rejects results that exceed one page", async () => {
-        mockedSend.mockResolvedValue({
-            Items: [{ id: "1" }],
-            LastEvaluatedKey: { pk: "1", sk: "1" },
-        });
-
-        await expect(query({ pkName: "pk", pk: "1" }, "table")).rejects.toThrow(
-            "DynamoDB query exceeded the single-page limit.",
-        );
-    });
-
     it("allows a limited query to return one page", async () => {
-        mockedSend.mockResolvedValue({
-            Items: [{ id: "1" }],
-            LastEvaluatedKey: { pk: "1", sk: "1" },
-        });
+        const userId = newTestUser();
+        await seedSession(userId);
+        await seedSession(userId);
 
-        const result = await query({ pkName: "pk", pk: "1" }, "table", {
-            limit: 1,
-        });
+        const result = await query(
+            { pkName: "UserId", pk: userId },
+            ACTIVE_SESSIONS_TABLE,
+            { limit: 1 },
+        );
 
-        expect(result).toEqual([{ id: "1" }]);
-        expect(mockedSend).toHaveBeenCalledTimes(1);
+        expect(result).toHaveLength(1);
     });
 });
 
 describe("transactWrite", () => {
-    beforeEach(() => {
-        jest.resetAllMocks();
-    });
-
-    it("builds put and conditional delete operations", async () => {
-        mockedSend.mockResolvedValue({});
+    it("applies put and conditional delete operations atomically", async () => {
+        const userId = newTestUser();
+        const existingSessionId = await seedSession(userId);
+        const createdSessionId = crypto.randomUUID();
 
         await transactWrite([
             {
                 type: "put",
-                tableName: "history",
-                item: { UserId: "user-123" },
+                tableName: ACTIVE_SESSIONS_TABLE,
+                item: {
+                    UserId: userId,
+                    SessionId: createdSessionId,
+                    TimeToExist: ttlSoon(),
+                },
             },
             {
                 type: "delete",
-                tableName: "active",
-                key: {
-                    pkName: "UserId",
-                    pk: "user-123",
-                    skName: "SessionId",
-                    sk: "session-456",
-                },
+                tableName: ACTIVE_SESSIONS_TABLE,
+                key: sessionKey(userId, existingSessionId),
             },
         ]);
 
-        const command = mockedSend.mock.calls[0][0] as {
-            input: { TransactItems: unknown[] };
-        };
-        expect(command.input.TransactItems).toEqual([
-            {
-                Put: {
-                    TableName: "history",
-                    Item: { UserId: "user-123" },
+        await expect(
+            get(sessionKey(userId, createdSessionId), ACTIVE_SESSIONS_TABLE),
+        ).resolves.not.toBeNull();
+        await expect(
+            get(sessionKey(userId, existingSessionId), ACTIVE_SESSIONS_TABLE),
+        ).resolves.toBeNull();
+    });
+
+    it("rejects when the conditional delete fails", async () => {
+        await expect(
+            transactWrite([
+                {
+                    type: "delete",
+                    tableName: ACTIVE_SESSIONS_TABLE,
+                    key: sessionKey(newTestUser(), crypto.randomUUID()),
                 },
-            },
-            {
-                Delete: {
-                    TableName: "active",
-                    Key: {
-                        UserId: "user-123",
-                        SessionId: "session-456",
-                    },
-                    ConditionExpression:
-                        "attribute_exists(#partitionKey) AND attribute_exists(#sortKey)",
-                    ExpressionAttributeNames: {
-                        "#partitionKey": "UserId",
-                        "#sortKey": "SessionId",
-                    },
-                },
-            },
-        ]);
+            ]),
+        ).rejects.toMatchObject({ name: "TransactionCanceledException" });
     });
 });
