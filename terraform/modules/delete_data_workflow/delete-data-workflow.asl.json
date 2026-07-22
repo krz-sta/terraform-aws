@@ -1,0 +1,122 @@
+{
+    "Comment": "Delete user data when no active session exists",
+    "StartAt": "CheckActiveSession",
+    "States": {
+        "CheckActiveSession": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::lambda:invoke",
+            "Parameters": {
+                "FunctionName": "${check_active_session_lambda_arn}",
+                "Payload": {
+                    "userId.$": "$.userId"
+                }
+            },
+            "ResultSelector": {
+                "hasActiveSession.$": "$.Payload.hasActiveSession"
+            },
+            "ResultPath": "$.sessionCheck",
+            "Next": "HasActiveSession",
+            "Catch": [
+                {
+                    "ErrorEquals": ["States.ALL"],
+                    "ResultPath": "$.workflowError",
+                    "Next": "WorkflowFailed"
+                }
+            ]
+        },
+        "HasActiveSession": {
+            "Type": "Choice",
+            "Choices": [
+                {
+                    "Variable": "$.sessionCheck.hasActiveSession",
+                    "BooleanEquals": true,
+                    "Next": "ActiveSessionExists"
+                }
+            ],
+            "Default": "DeleteUserData"
+        },
+        "ActiveSessionExists": {
+            "Type": "Pass",
+            "Parameters": {
+                "status": "BLOCKED",
+                "message": "Data cannot be deleted while an active session exists."
+            },
+            "End": true
+        },
+        "DeleteUserData": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::lambda:invoke",
+            "Parameters": {
+                "FunctionName": "${delete_user_data_lambda_arn}",
+                "Payload": {
+                    "userId.$": "$.userId"
+                }
+            },
+            "ResultSelector": {
+                "status": "DELETED",
+                "message": "User data deleted successfully."
+            },
+            "End": true,
+            "Retry": [
+                {
+                    "ErrorEquals": [
+                        "Lambda.ServiceException",
+                        "Lambda.AWSLambdaException",
+                        "Lambda.SdkClientException",
+                        "Lambda.TooManyRequestsException"
+                    ],
+                    "IntervalSeconds": 1,
+                    "MaxAttempts": 2,
+                    "BackoffRate": 2
+                }
+            ],
+            "Catch": [
+                {
+                    "ErrorEquals": ["States.ALL"],
+                    "ResultPath": "$.workflowError",
+                    "Next": "CleanupPartialDeletion"
+                }
+            ]
+        },
+        "CleanupPartialDeletion": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::lambda:invoke",
+            "Parameters": {
+                "FunctionName": "${cleanup_delete_data_lambda_arn}",
+                "Payload": {
+                    "userId.$": "$.userId"
+                }
+            },
+            "ResultSelector": {
+                "status": "DELETED",
+                "message": "User data deleted successfully."
+            },
+            "End": true,
+            "Retry": [
+                {
+                    "ErrorEquals": [
+                        "Lambda.ServiceException",
+                        "Lambda.AWSLambdaException",
+                        "Lambda.SdkClientException",
+                        "Lambda.TooManyRequestsException"
+                    ],
+                    "IntervalSeconds": 1,
+                    "MaxAttempts": 2,
+                    "BackoffRate": 2
+                }
+            ],
+            "Catch": [
+                {
+                    "ErrorEquals": ["States.ALL"],
+                    "ResultPath": "$.workflowError",
+                    "Next": "WorkflowFailed"
+                }
+            ]
+        },
+        "WorkflowFailed": {
+            "Type": "Fail",
+            "ErrorPath": "$.workflowError.Error",
+            "CausePath": "$.workflowError.Cause"
+        }
+    }
+}

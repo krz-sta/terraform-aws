@@ -4,7 +4,6 @@ from awsglue.utils import getResolvedOptions
 from pyspark.context import SparkContext
 from awsglue.context import GlueContext
 from awsglue.job import Job
-from awsglue.dynamicframe import DynamicFrame
 from pyspark.sql.functions import col, lit, to_json
 from pyspark.sql.types import ArrayType, MapType, StructType
 
@@ -19,13 +18,7 @@ output_base_path = args["S3_OUTPUT_PATH"].rstrip("/")
 output_prefix = args["S3_OUTPUT_PREFIX"].strip("/")
 output_path = f"{output_base_path}/{output_prefix}" if output_prefix else output_base_path
 
-dynamic_frame = glueContext.create_dynamic_frame.from_options(
-    connection_type="s3",
-    connection_options={"paths": [source_path]},
-    format="parquet"
-)
-
-df = dynamic_frame.toDF()
+df = glueContext.spark_session.read.parquet(source_path)
 
 for field in df.schema.fields:
     if isinstance(field.dataType, (ArrayType, MapType, StructType)):
@@ -34,14 +27,6 @@ for field in df.schema.fields:
 run_timestamp = datetime.utcnow()
 df = df.withColumn("run_datetime", lit(run_timestamp.strftime("%Y-%m-%d-%H-%M")))
 
-dynamic_frame_flat = DynamicFrame.fromDF(df, glueContext, "dynamic_frame_flat")
-
-glueContext.write_dynamic_frame.from_options(
-    frame=dynamic_frame_flat,
-    connection_type="s3",
-    connection_options={"path": output_path, "partitionKeys": ["run_datetime"]},
-    format="csv",
-    format_options={"withHeader": True, "separator": ","}
-)
+df.write.partitionBy("run_datetime").mode("append").option("header", True).csv(output_path)
 
 job.commit()

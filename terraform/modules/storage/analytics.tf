@@ -11,19 +11,26 @@ module "glue_iam" {
     Version = "2012-10-17"
     Statement = [
       {
-        Action = [
-          "s3:GetObject",
-          "s3:ListBucket",
-          "s3:DeleteObject",
-          "s3:PutObject"
-        ]
+        Sid    = "ReadWorkoutsArchive"
+        Action = ["s3:GetObject", "s3:ListBucket"]
         Effect = "Allow"
         Resource = [
-          aws_s3_bucket.workouts_archive.arn, "${aws_s3_bucket.workouts_archive.arn}/*",
-          aws_s3_bucket.analytics_csv.arn, "${aws_s3_bucket.analytics_csv.arn}/*",
-          aws_s3_bucket.athena_results.arn, "${aws_s3_bucket.athena_results.arn}/*",
-          aws_s3_bucket.glue_scripts.arn, "${aws_s3_bucket.glue_scripts.arn}/*"
+          aws_s3_bucket.workouts_archive.arn, "${aws_s3_bucket.workouts_archive.arn}/*"
         ]
+      },
+      {
+        Sid    = "ReadWriteAnalyticsCsv"
+        Action = ["s3:GetObject", "s3:ListBucket", "s3:PutObject"]
+        Effect = "Allow"
+        Resource = [
+          aws_s3_bucket.analytics_csv.arn, "${aws_s3_bucket.analytics_csv.arn}/*"
+        ]
+      },
+      {
+        Sid      = "ReadGlueScript"
+        Action   = ["s3:GetObject"]
+        Effect   = "Allow"
+        Resource = ["${aws_s3_bucket.glue_scripts.arn}/*"]
       }
     ]
   })
