@@ -12,6 +12,7 @@ import type {
     QueryOptions,
     TransactWriteOperation,
 } from "../types/database.js";
+import { logger } from "./logger.service.js";
 
 function buildKey(key: DbKey) {
     const normalizedKey: Record<string, string> = {
@@ -62,14 +63,14 @@ function buildDeleteInput(key: DbKey, tableName: string) {
 export async function get<
     T extends Record<string, unknown> = Record<string, unknown>,
 >(key: DbKey, tableName: string) {
-    console.log(`Getting item from ${tableName}: ${JSON.stringify(key)}`);
+    logger.info("Getting item", { tableName, key });
     const result = await docClient.send(
         new GetCommand({
             TableName: tableName,
             Key: buildKey(key),
         }),
     );
-    console.log(`Result from get: ${JSON.stringify(result.Item, null, 2)}`);
+    logger.info("Get result", { tableName, item: result.Item ?? null });
     return (result.Item as T | undefined) || null;
 }
 

@@ -36,12 +36,9 @@
             "Default": "DeleteUserData"
         },
         "ActiveSessionExists": {
-            "Type": "Pass",
-            "Parameters": {
-                "status": "BLOCKED",
-                "message": "Data cannot be deleted while an active session exists."
-            },
-            "End": true
+            "Type": "Fail",
+            "Error": "ActiveSessionExists",
+            "Cause": "Data cannot be deleted while an active session exists."
         },
         "DeleteUserData": {
             "Type": "Task",
@@ -74,11 +71,11 @@
                 {
                     "ErrorEquals": ["States.ALL"],
                     "ResultPath": "$.workflowError",
-                    "Next": "CleanupPartialDeletion"
+                    "Next": "RetryDeletion"
                 }
             ]
         },
-        "CleanupPartialDeletion": {
+        "RetryDeletion": {
             "Type": "Task",
             "Resource": "arn:aws:states:::lambda:invoke",
             "Parameters": {

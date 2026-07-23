@@ -2,57 +2,11 @@ import { unmarshall } from "@aws-sdk/util-dynamodb";
 import { SQSEvent, SQSRecord } from "aws-lambda/trigger/sqs.js";
 import { saveWorkoutSnapshot } from "./archive-workout.service.js";
 import type { WorkoutSnapshot } from "../../shared/types/archive.js";
-import type { DynamoDbStreamRecord } from "../../shared/types/events.js";
-
-function parseJson(value: string): unknown {
-    try {
-        return JSON.parse(value);
-    } catch {
-        return null;
-    }
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return value !== null && typeof value === "object";
-}
-
-function hasRecordsProperty(
-    value: Record<string, unknown>,
-): value is { Records: unknown[] } {
-    return "Records" in value && Array.isArray(value.Records);
-}
-
-function isDynamoDbRecord(value: unknown): value is DynamoDbStreamRecord {
-    if (!isRecord(value)) return false;
-    if (!("dynamodb" in value)) return true;
-
-    const dynamodb = value.dynamodb;
-    if (!isRecord(dynamodb)) return false;
-    if (!("NewImage" in dynamodb)) return true;
-
-    return isRecord(dynamodb.NewImage);
-}
-
-function getDbRecords(payload: unknown): DynamoDbStreamRecord[] {
-    if (!isRecord(payload)) return [];
-
-    if (hasRecordsProperty(payload)) {
-        return payload.Records.filter(isDynamoDbRecord);
-    }
-
-    return isDynamoDbRecord(payload) ? [payload] : [];
-}
-
-function unwrapSnsMessage(sqsMessage: unknown): unknown {
-    if (!isRecord(sqsMessage) || !("Message" in sqsMessage)) {
-        return sqsMessage;
-    }
-
-    const nestedMessage = sqsMessage.Message;
-    return typeof nestedMessage === "string"
-        ? parseJson(nestedMessage)
-        : nestedMessage;
-}
+import {
+    isRecord,
+    parseDbRecordsFromSqs,
+} from "../../shared/helpers/stream-parser.helper.js";
+import { logger } from "../../shared/services/logger.service.js";
 
 function isValidWorkoutSnapshot(value: unknown): value is WorkoutSnapshot {
     if (!isRecord(value)) return false;
@@ -73,9 +27,7 @@ function isValidWorkoutSnapshot(value: unknown): value is WorkoutSnapshot {
 }
 
 function extractSnapshots(record: SQSRecord): WorkoutSnapshot[] {
-    const sqsMessage = parseJson(record.body);
-    const snsMessage = unwrapSnsMessage(sqsMessage);
-    const dbRecords = getDbRecords(snsMessage);
+    const dbRecords = parseDbRecordsFromSqs(record);
 
     const snapshots: WorkoutSnapshot[] = [];
 
@@ -121,7 +73,7 @@ export async function archiveWorkoutSnapshots(workouts: WorkoutSnapshot[]) {
             workout.SessionId,
         );
 
-        console.log("Saving workout snapshot to S3 with key:", fileKey);
+        logger.info("Saving workout snapshot to S3", { fileKey });
 
         await saveWorkoutSnapshot(fileKey, workout);
     }

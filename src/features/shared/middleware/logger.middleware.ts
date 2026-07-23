@@ -1,17 +1,24 @@
-import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
+import {
+    APIGatewayProxyEvent,
+    APIGatewayProxyResult,
+    Context,
+} from "aws-lambda";
+import { logger } from "../services/logger.service.js";
 
-function safeJsonParse(value: string): unknown {
-    try {
-        return JSON.parse(value);
-    } catch {
-        return value;
-    }
-}
-
-export function logger() {
+function loggerMiddleware() {
     return {
-        before: function (request: { event: APIGatewayProxyEvent }): void {
-            console.log("REQUEST", {
+        before: function (request: {
+            event: APIGatewayProxyEvent;
+            context: Context;
+        }): void {
+            logger.setContext({
+                requestId:
+                    request.context?.awsRequestId ??
+                    request.event.requestContext?.requestId,
+                functionName: request.context?.functionName,
+            });
+
+            logger.info("Request received", {
                 httpMethod: request.event.httpMethod,
                 path: request.event.path,
                 queryStringParameters: request.event.queryStringParameters,
@@ -19,18 +26,11 @@ export function logger() {
             });
         },
         after: function (request: { response?: APIGatewayProxyResult }): void {
-            console.log("RESPONSE", {
+            logger.info("Request completed", {
                 statusCode: request.response?.statusCode,
-                body:
-                    typeof request.response?.body === "string"
-                        ? safeJsonParse(request.response.body)
-                        : request.response?.body,
-            });
-        },
-        onError: function (request: { error: unknown }): void {
-            console.log("ERROR", {
-                error: request.error,
+                body: request.response?.body,
             });
         },
     };
 }
+export { loggerMiddleware as logger };

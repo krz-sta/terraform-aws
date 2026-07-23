@@ -37,7 +37,7 @@ function parseFailureMessage(cause: string | undefined): string {
             ? parsed.message
             : "User data could not be deleted.";
     } catch {
-        return "User data could not be deleted.";
+        return cause;
     }
 }
 
@@ -68,10 +68,6 @@ export async function startDeleteDataWorkflow(userId: string) {
         typeof output.message === "string"
             ? output.message
             : "User data could not be deleted.";
-
-    if (output.status === "BLOCKED") {
-        throw new ConflictError(message);
-    }
 
     if (output.status !== "DELETED") {
         throw new AppError("Delete-data workflow returned an unknown result.");

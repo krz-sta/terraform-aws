@@ -1,5 +1,6 @@
 import { APIGatewayProxyResult } from "aws-lambda";
 import { AppError } from "../helpers/error.helper.js";
+import { logger } from "../services/logger.service.js";
 
 export function errorHandler() {
     return {
@@ -12,6 +13,12 @@ export function errorHandler() {
             if (!error) return;
 
             if (error instanceof AppError) {
+                logger.warn("Handled application error", {
+                    statusCode: error.statusCode,
+                    message: error.message,
+                    details: error.data,
+                });
+
                 const body =
                     error.data !== undefined
                         ? { message: error.message, details: error.data }
@@ -24,7 +31,7 @@ export function errorHandler() {
                 return;
             }
 
-            console.error("Unhandled error:", error);
+            logger.error("Unhandled error", error);
             request.response = {
                 statusCode: 500,
                 body: JSON.stringify({ message: "Unhandled server error." }),

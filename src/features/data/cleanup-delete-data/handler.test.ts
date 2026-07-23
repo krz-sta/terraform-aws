@@ -1,53 +1,52 @@
-import crypto from "crypto";
-import { handler } from "./handler.js";
-import { put } from "../../shared/services/db-client.service.js";
-import {
-    ACTIVE_SESSIONS_TABLE,
-    cleanupUser,
-    makeTestUserId,
-    ttlSoon,
-} from "../../../test-utils/aws.js";
+import { jest } from "@jest/globals";
 
-const invoke = (event: any): any => handler(event, {} as any, undefined as any);
+jest.unstable_mockModule(
+    "../delete-user-data/delete-user-data.helper.js",
+    () => ({
+        deleteUserData: jest.fn(),
+    }),
+);
+
+const { handler } = await import("./handler.js");
+const { deleteUserData } =
+    await import("../delete-user-data/delete-user-data.helper.js");
+const mockedDeleteUserData = deleteUserData as jest.MockedFunction<
+    typeof deleteUserData
+>;
+
+const invoke = async (event: unknown) =>
+    (await handler(event as any, {} as any, undefined as any))!;
 
 describe("cleanup-delete-data handler", () => {
-    const conflictUserId = makeTestUserId();
-
-    afterAll(async () => {
-        await cleanupUser(conflictUserId);
+    beforeEach(() => {
+        jest.resetAllMocks();
     });
 
-    it("continues a partial deletion", async () => {
-        const userId = makeTestUserId();
-
-        await expect(invoke({ userId })).resolves.toEqual({
-            userId,
+    it("delegates to deleteUserData", async () => {
+        mockedDeleteUserData.mockResolvedValue({
+            userId: "user-123",
             deleted: {
                 sessionHistory: 0,
                 userStats: 0,
                 archiveObjects: 0,
             },
         });
+
+        await expect(invoke({ userId: "user-123" })).resolves.toEqual({
+            userId: "user-123",
+            deleted: {
+                sessionHistory: 0,
+                userStats: 0,
+                archiveObjects: 0,
+            },
+        });
+
+        expect(mockedDeleteUserData).toHaveBeenCalledWith("user-123");
     });
 
     it("rejects missing userId", async () => {
         await expect(invoke({})).rejects.toThrow(
             "Missing required field: userId",
-        );
-    });
-
-    it("propagates a cleanup failure", async () => {
-        await put(
-            {
-                UserId: conflictUserId,
-                SessionId: crypto.randomUUID(),
-                TimeToExist: ttlSoon(),
-            },
-            ACTIVE_SESSIONS_TABLE,
-        );
-
-        await expect(invoke({ userId: conflictUserId })).rejects.toThrow(
-            "Data cannot be deleted while an active session exists.",
         );
     });
 });

@@ -1,7 +1,8 @@
 import { APIGatewayProxyEvent } from "aws-lambda/trigger/api-gateway-proxy.js";
+import { logger } from "../../shared/services/logger.service.js";
 
 export const handler = async (event: APIGatewayProxyEvent) => {
-    console.log("Received event:", JSON.stringify(event, null, 2));
+    logger.info("Received event", { event });
     return {
         statusCode: 200,
         headers: {

@@ -38,12 +38,8 @@ describe("startDeleteDataWorkflow", () => {
 
     it("throws conflict when the workflow is blocked", async () => {
         mockedSend.mockResolvedValue({
-            status: "SUCCEEDED",
-            output: JSON.stringify({
-                status: "BLOCKED",
-                message:
-                    "Data cannot be deleted while an active session exists.",
-            }),
+            status: "FAILED",
+            cause: "Data cannot be deleted while an active session exists.",
         });
 
         await expect(startDeleteDataWorkflow("user-123")).rejects.toThrow(
@@ -51,7 +47,7 @@ describe("startDeleteDataWorkflow", () => {
         );
     });
 
-    it("throws conflict when the delete-task recheck finds a session", async () => {
+    it("throws conflict when a nested lambda error reports an active session", async () => {
         mockedSend.mockResolvedValue({
             status: "FAILED",
             cause: JSON.stringify({
@@ -76,6 +72,27 @@ describe("startDeleteDataWorkflow", () => {
                 message: "User data could not be deleted.",
                 statusCode: 500,
             },
+        );
+    });
+
+    it("throws when the workflow output is missing", async () => {
+        mockedSend.mockResolvedValue({
+            status: "SUCCEEDED",
+        });
+
+        await expect(startDeleteDataWorkflow("user-123")).rejects.toThrow(
+            "Delete-data workflow completed without output.",
+        );
+    });
+
+    it("throws when the workflow output has an unknown status", async () => {
+        mockedSend.mockResolvedValue({
+            status: "SUCCEEDED",
+            output: JSON.stringify({ status: "UNKNOWN" }),
+        });
+
+        await expect(startDeleteDataWorkflow("user-123")).rejects.toThrow(
+            "Delete-data workflow returned an unknown result.",
         );
     });
 });

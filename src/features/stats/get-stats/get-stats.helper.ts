@@ -1,13 +1,15 @@
 import { requireEnv } from "../../shared/helpers/env.helper.js";
 import { query } from "../../shared/services/db-client.service.js";
 import { UserStatItem } from "../../shared/types/workout.js";
+import { logger } from "../../shared/services/logger.service.js";
 
 const USER_STATS_TABLE_NAME = requireEnv("USER_STATS_TABLE_NAME");
 
 export async function getStatsLogic(userId: string) {
-    console.log(
-        `Querying stats for userId: ${userId} from table: ${USER_STATS_TABLE_NAME}`,
-    );
+    logger.info("Querying stats", {
+        userId,
+        tableName: USER_STATS_TABLE_NAME,
+    });
     const stats = await query<UserStatItem>(
         {
             pkName: "UserId",

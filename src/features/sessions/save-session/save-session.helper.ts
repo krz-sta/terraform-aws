@@ -2,6 +2,7 @@ import { saveSession } from "./save-session.service.js";
 import { requireEnv } from "../../shared/helpers/env.helper.js";
 import { get } from "../../shared/services/db-client.service.js";
 import { NotFoundError } from "../../shared/helpers/error.helper.js";
+import { logger } from "../../shared/services/logger.service.js";
 import {
     ActiveSessionItem,
     SessionHistoryItem,
@@ -34,8 +35,11 @@ export async function saveSessionLogic(userId: string, sessionId: string) {
         TimeToExist: Math.floor(Date.now() / 1000) + 30 * 24 * 3600,
     };
 
-    console.log(`Saving session to history:`);
-    console.log(sessionHistoryItem);
+    logger.info("Saving session to history", {
+        userId,
+        sessionId,
+        sessionHistoryItem,
+    });
 
     await saveSession(sessionHistoryItem);
 }

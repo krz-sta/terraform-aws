@@ -25,7 +25,8 @@ function makeEvent(userId?: string) {
     } as any;
 }
 
-const invoke = (event: any): any => handler(event, {} as any, undefined as any);
+const invoke = async (event: unknown) =>
+    (await handler(event as any, {} as any, undefined as any))!;
 
 describe("start-delete-data handler", () => {
     beforeEach(() => {

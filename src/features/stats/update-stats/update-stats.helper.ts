@@ -1,9 +1,12 @@
 import { unmarshall } from "@aws-sdk/util-dynamodb";
-import { SQSEvent, SQSRecord } from "aws-lambda";
+import { SQSEvent } from "aws-lambda";
 import { add, get, update } from "../../shared/services/db-client.service.js";
 import { UserStatItem } from "../../shared/types/workout.js";
 import { requireEnv } from "../../shared/helpers/env.helper.js";
-import type { DynamoDbStreamRecord } from "../../shared/types/events.js";
+import {
+    isRecord,
+    parseDbRecordsFromSqs,
+} from "../../shared/helpers/stream-parser.helper.js";
 import type {
     ExerciseData,
     ParsedSessionData,
@@ -13,56 +16,6 @@ import type {
 
 const USER_STATS_TABLE_NAME = requireEnv("USER_STATS_TABLE_NAME");
 
-function parseJson(value: string): unknown {
-    try {
-        return JSON.parse(value);
-    } catch {
-        return null;
-    }
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return value !== null && typeof value === "object";
-}
-
-function hasRecordsProperty(
-    value: Record<string, unknown>,
-): value is { Records: unknown[] } {
-    return "Records" in value && Array.isArray(value.Records);
-}
-
-function isDynamoDbRecord(value: unknown): value is DynamoDbStreamRecord {
-    if (!isRecord(value)) return false;
-    if (!("dynamodb" in value)) return true;
-
-    const dynamodb = value.dynamodb;
-    if (!isRecord(dynamodb)) return false;
-    if (!("NewImage" in dynamodb)) return true;
-
-    return isRecord(dynamodb.NewImage);
-}
-
-function getDbRecords(payload: unknown): DynamoDbStreamRecord[] {
-    if (!isRecord(payload)) return [];
-
-    if (hasRecordsProperty(payload)) {
-        return payload.Records.filter(isDynamoDbRecord);
-    }
-
-    return isDynamoDbRecord(payload) ? [payload] : [];
-}
-
-function unwrapSnsMessage(sqsBody: unknown): unknown {
-    if (!isRecord(sqsBody) || !("Message" in sqsBody)) {
-        return sqsBody;
-    }
-
-    const nestedMessage = sqsBody.Message;
-    return typeof nestedMessage === "string"
-        ? parseJson(nestedMessage)
-        : nestedMessage;
-}
-
 function isParsedSessionData(value: unknown): value is ParsedSessionData {
     return (
         isRecord(value) &&
@@ -71,17 +24,11 @@ function isParsedSessionData(value: unknown): value is ParsedSessionData {
     );
 }
 
-function parseDbRecords(record: SQSRecord): DynamoDbStreamRecord[] {
-    const sqsBody = parseJson(record.body);
-    const message = unwrapSnsMessage(sqsBody);
-    return getDbRecords(message);
-}
-
 export function buildSessionsForStats(event: SQSEvent): SessionStatsInput[] {
     const sessions: SessionStatsInput[] = [];
 
     for (const record of event.Records ?? []) {
-        for (const dbRecord of parseDbRecords(record)) {
+        for (const dbRecord of parseDbRecordsFromSqs(record)) {
             const newImage = dbRecord.dynamodb?.NewImage;
             if (!newImage) continue;
 
