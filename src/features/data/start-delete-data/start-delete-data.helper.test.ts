@@ -4,12 +4,13 @@ const mockedSend = jest.fn<any>();
 
 jest.unstable_mockModule("@aws-sdk/client-sfn", () => ({
     SFNClient: jest.fn(() => ({ send: mockedSend })),
-    StartSyncExecutionCommand: jest.fn((input: unknown) => input),
+    StartExecutionCommand: jest.fn((input: unknown) => input),
+    DescribeExecutionCommand: jest.fn((input: unknown) => input),
 }));
 
 const { startDeleteDataWorkflow } =
     await import("./start-delete-data.helper.js");
-const { StartSyncExecutionCommand } = await import("@aws-sdk/client-sfn");
+const { StartExecutionCommand } = await import("@aws-sdk/client-sfn");
 const { ConflictError } = await import("../../shared/helpers/error.helper.js");
 
 describe("startDeleteDataWorkflow", () => {
@@ -18,18 +19,20 @@ describe("startDeleteDataWorkflow", () => {
     });
 
     it("returns an informative success result", async () => {
-        mockedSend.mockResolvedValue({
-            status: "SUCCEEDED",
-            output: JSON.stringify({
-                status: "DELETED",
-                message: "User data deleted successfully.",
-            }),
-        });
+        mockedSend
+            .mockResolvedValueOnce({ executionArn: "exec-arn" })
+            .mockResolvedValueOnce({
+                status: "SUCCEEDED",
+                output: JSON.stringify({
+                    status: "DELETED",
+                    message: "User data deleted successfully.",
+                }),
+            });
 
         await expect(startDeleteDataWorkflow("user-123")).resolves.toEqual({
             message: "User data deleted successfully.",
         });
-        expect(StartSyncExecutionCommand).toHaveBeenCalledWith({
+        expect(StartExecutionCommand).toHaveBeenCalledWith({
             stateMachineArn:
                 "arn:aws:states:eu-central-1:123456789012:stateMachine:delete-data-placeholder",
             input: JSON.stringify({ userId: "user-123" }),
@@ -37,10 +40,12 @@ describe("startDeleteDataWorkflow", () => {
     });
 
     it("throws conflict when the workflow is blocked", async () => {
-        mockedSend.mockResolvedValue({
-            status: "FAILED",
-            cause: "Data cannot be deleted while an active session exists.",
-        });
+        mockedSend
+            .mockResolvedValueOnce({ executionArn: "exec-arn" })
+            .mockResolvedValueOnce({
+                status: "FAILED",
+                cause: "Data cannot be deleted while an active session exists.",
+            });
 
         await expect(startDeleteDataWorkflow("user-123")).rejects.toThrow(
             ConflictError,
@@ -48,13 +53,15 @@ describe("startDeleteDataWorkflow", () => {
     });
 
     it("throws conflict when a nested lambda error reports an active session", async () => {
-        mockedSend.mockResolvedValue({
-            status: "FAILED",
-            cause: JSON.stringify({
-                errorMessage:
-                    "Data cannot be deleted while an active session exists.",
-            }),
-        });
+        mockedSend
+            .mockResolvedValueOnce({ executionArn: "exec-arn" })
+            .mockResolvedValueOnce({
+                status: "FAILED",
+                cause: JSON.stringify({
+                    errorMessage:
+                        "Data cannot be deleted while an active session exists.",
+                }),
+            });
 
         await expect(startDeleteDataWorkflow("user-123")).rejects.toThrow(
             ConflictError,
@@ -62,10 +69,12 @@ describe("startDeleteDataWorkflow", () => {
     });
 
     it("returns a generic error for unexpected workflow failures", async () => {
-        mockedSend.mockResolvedValue({
-            status: "FAILED",
-            cause: JSON.stringify({ message: "Internal storage failure." }),
-        });
+        mockedSend
+            .mockResolvedValueOnce({ executionArn: "exec-arn" })
+            .mockResolvedValueOnce({
+                status: "FAILED",
+                cause: JSON.stringify({ message: "Internal storage failure." }),
+            });
 
         await expect(startDeleteDataWorkflow("user-123")).rejects.toMatchObject(
             {
@@ -76,9 +85,9 @@ describe("startDeleteDataWorkflow", () => {
     });
 
     it("throws when the workflow output is missing", async () => {
-        mockedSend.mockResolvedValue({
-            status: "SUCCEEDED",
-        });
+        mockedSend
+            .mockResolvedValueOnce({ executionArn: "exec-arn" })
+            .mockResolvedValueOnce({ status: "SUCCEEDED" });
 
         await expect(startDeleteDataWorkflow("user-123")).rejects.toThrow(
             "Delete-data workflow completed without output.",
@@ -86,10 +95,12 @@ describe("startDeleteDataWorkflow", () => {
     });
 
     it("throws when the workflow output has an unknown status", async () => {
-        mockedSend.mockResolvedValue({
-            status: "SUCCEEDED",
-            output: JSON.stringify({ status: "UNKNOWN" }),
-        });
+        mockedSend
+            .mockResolvedValueOnce({ executionArn: "exec-arn" })
+            .mockResolvedValueOnce({
+                status: "SUCCEEDED",
+                output: JSON.stringify({ status: "UNKNOWN" }),
+            });
 
         await expect(startDeleteDataWorkflow("user-123")).rejects.toThrow(
             "Delete-data workflow returned an unknown result.",

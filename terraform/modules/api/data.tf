@@ -46,7 +46,12 @@ data "aws_iam_policy_document" "get_stats" {
 
 data "aws_iam_policy_document" "start_delete_data" {
   statement {
-    actions   = ["states:StartSyncExecution"]
+    actions   = ["states:StartExecution"]
     resources = [var.delete_data_state_machine_arn]
+  }
+
+  statement {
+    actions   = ["states:DescribeExecution"]
+    resources = [format("%s:*", replace(var.delete_data_state_machine_arn, ":stateMachine:", ":execution:"))]
   }
 }

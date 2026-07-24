@@ -16,11 +16,11 @@ resource "aws_cloudwatch_log_group" "delete_data" {
 resource "aws_sfn_state_machine" "delete_data" {
   name     = "${var.prefix}-delete-data-fn"
   role_arn = module.delete_data_state_machine_iam.role_arn
-  type     = "EXPRESS"
+  type     = "STANDARD"
 
   logging_configuration {
     level                  = "ALL"
-    include_execution_data = false
+    include_execution_data = true
     log_destination        = "${aws_cloudwatch_log_group.delete_data.arn}:*"
   }
 
