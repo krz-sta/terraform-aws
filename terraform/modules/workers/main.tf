@@ -33,12 +33,13 @@ resource "aws_sqs_queue_policy" "stats" {
 }
 
 module "pipe_iam" {
-  source                 = "../iam"
-  name                   = "${var.prefix}-pipe"
-  service_principal      = "pipes.amazonaws.com"
-  attach_basic_execution = false
-  custom_policy_json     = data.aws_iam_policy_document.pipe_iam.json
-  create_custom_policy   = true
+  source                   = "../iam"
+  name                     = "${var.prefix}-pipe"
+  service_principal        = "pipes.amazonaws.com"
+  attach_basic_execution   = false
+  attach_xray_daemon_write = false
+  custom_policy_json       = data.aws_iam_policy_document.pipe_iam.json
+  create_custom_policy     = true
 }
 
 resource "aws_pipes_pipe" "ddb_to_sns" {

@@ -1,13 +1,25 @@
-name: Deploy
+name: Deploy Application
 
 on:
     push:
         branches: [main]
+        paths:
+            - "src/**"
+            - "bundle.js"
+            - "package.json"
+            - "package-lock.json"
+            - "tsconfig.json"
+            - "dist/**"
+            - ".github/workflows/deploy-app.yml"
     workflow_dispatch:
 
 permissions:
     contents: read
     id-token: write
+
+concurrency:
+    group: app-deploy
+    cancel-in-progress: false
 
 jobs:
     deploy:

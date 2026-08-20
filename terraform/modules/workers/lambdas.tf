@@ -1,9 +1,10 @@
 module "archive_iam" {
   source = "../iam"
 
-  name                 = "${var.prefix}-archive-workout"
-  custom_policy_json   = data.aws_iam_policy_document.archive_iam.json
-  create_custom_policy = true
+  name                     = "${var.prefix}-archive-workout"
+  custom_policy_json       = data.aws_iam_policy_document.archive_iam.json
+  create_custom_policy     = true
+  attach_xray_daemon_write = true
 }
 
 module "archive_lambda" {
@@ -27,9 +28,10 @@ resource "aws_lambda_event_source_mapping" "archive_lambda_sqs_trigger" {
 module "stats_iam" {
   source = "../iam"
 
-  name                 = "${var.prefix}-update-stats"
-  custom_policy_json   = data.aws_iam_policy_document.stats_iam.json
-  create_custom_policy = true
+  name                     = "${var.prefix}-update-stats"
+  custom_policy_json       = data.aws_iam_policy_document.stats_iam.json
+  create_custom_policy     = true
+  attach_xray_daemon_write = true
 }
 
 module "stats_lambda" {

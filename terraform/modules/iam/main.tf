@@ -20,6 +20,12 @@ resource "aws_iam_role_policy_attachment" "basic_execution" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
+resource "aws_iam_role_policy_attachment" "xray_daemon_write" {
+  count      = var.attach_xray_daemon_write ? 1 : 0
+  role       = aws_iam_role.role.name
+  policy_arn = "arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess"
+}
+
 resource "aws_iam_policy" "policy" {
   count  = var.create_custom_policy ? 1 : 0
   name   = "${var.name}-custom-policy"

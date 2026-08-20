@@ -1,40 +1,18 @@
+import { Logger as PowertoolsLogger } from "@aws-lambda-powertools/logger";
+
 type LogData = Record<string, unknown>;
 
-type LogLevel = "info" | "warn" | "error";
-
-function serializeError(error: Error): LogData {
-    return {
-        name: error.name,
-        message: error.message,
-        stack: error.stack,
-    };
-}
-
-function normalizeData(data?: unknown): LogData | undefined {
-    if (data === undefined) {
-        return undefined;
-    }
-
-    if (data instanceof Error) {
-        return { error: serializeError(data) };
-    }
-
-    if (typeof data === "object" && data !== null) {
-        return data as LogData;
-    }
-
-    return { data };
-}
-
 export class Logger {
-    private context: LogData;
+    private readonly logger: PowertoolsLogger;
 
     constructor(context: LogData = {}) {
-        this.context = context;
+        this.logger = new PowertoolsLogger({ serviceName: "terraform-aws" });
+        this.setContext(context);
     }
 
     setContext(context: LogData): void {
-        this.context = context;
+        this.logger.resetKeys();
+        this.logger.appendKeys(context);
     }
 
     info(message: string, data?: unknown): void {
@@ -49,24 +27,46 @@ export class Logger {
         this.write("error", message, data);
     }
 
-    private write(level: LogLevel, message: string, data?: unknown): void {
-        const entry: LogData = {
-            level,
-            timestamp: new Date().toISOString(),
-            message,
-            ...this.context,
-            ...normalizeData(data),
-        };
+    private write(
+        logType: "info" | "warn" | "error",
+        message: string,
+        data?: unknown,
+    ): void {
+        const payload = this.normalizeData(data);
 
-        const line = JSON.stringify(entry);
-
-        if (level === "error") {
-            console.error(line);
-        } else if (level === "warn") {
-            console.warn(line);
-        } else {
-            console.log(line);
+        if (logType === "error") {
+            this.logger.error(message, ...(payload ? [payload] : []));
+            return;
         }
+
+        if (logType === "warn") {
+            this.logger.warn(message, ...(payload ? [payload] : []));
+            return;
+        }
+
+        this.logger.info(message, ...(payload ? [payload] : []));
+    }
+
+    private normalizeData(data?: unknown): LogData | undefined {
+        if (data === undefined) {
+            return undefined;
+        }
+
+        if (data instanceof Error) {
+            return {
+                error: {
+                    name: data.name,
+                    message: data.message,
+                    stack: data.stack,
+                },
+            };
+        }
+
+        if (typeof data === "object" && data !== null) {
+            return data as LogData;
+        }
+
+        return { data };
     }
 }
 

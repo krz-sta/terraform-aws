@@ -8,6 +8,10 @@ resource "aws_lambda_function" "function" {
   layers           = var.layers
   timeout          = var.timeout
 
+  tracing_config {
+    mode = "Active"
+  }
+
   dynamic "environment" {
     for_each = length(var.env_variables) > 0 ? [1] : []
     content {

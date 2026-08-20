@@ -1,9 +1,10 @@
 module "check_active_session_iam" {
   source = "../iam"
 
-  name                 = "${var.prefix}-check-active-session"
-  custom_policy_json   = data.aws_iam_policy_document.check_active_session_iam.json
-  create_custom_policy = true
+  name                     = "${var.prefix}-check-active-session"
+  custom_policy_json       = data.aws_iam_policy_document.check_active_session_iam.json
+  create_custom_policy     = true
+  attach_xray_daemon_write = true
 }
 
 module "check_active_session_lambda" {
@@ -22,9 +23,10 @@ module "check_active_session_lambda" {
 module "delete_user_data_iam" {
   source = "../iam"
 
-  name                 = "${var.prefix}-delete-user-data"
-  custom_policy_json   = data.aws_iam_policy_document.delete_user_data_iam.json
-  create_custom_policy = true
+  name                     = "${var.prefix}-delete-user-data"
+  custom_policy_json       = data.aws_iam_policy_document.delete_user_data_iam.json
+  create_custom_policy     = true
+  attach_xray_daemon_write = true
 }
 
 module "delete_user_data_lambda" {
@@ -46,9 +48,10 @@ module "delete_user_data_lambda" {
 module "cleanup_delete_data_iam" {
   source = "../iam"
 
-  name                 = "${var.prefix}-cleanup-delete-data"
-  custom_policy_json   = data.aws_iam_policy_document.delete_user_data_iam.json
-  create_custom_policy = true
+  name                     = "${var.prefix}-cleanup-delete-data"
+  custom_policy_json       = data.aws_iam_policy_document.delete_user_data_iam.json
+  create_custom_policy     = true
+  attach_xray_daemon_write = true
 }
 
 module "cleanup_delete_data_lambda" {

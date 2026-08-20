@@ -1,11 +1,12 @@
 module "delete_data_state_machine_iam" {
   source = "../iam"
 
-  name                   = "${var.prefix}-delete-data-state-machine"
-  service_principal      = "states.amazonaws.com"
-  attach_basic_execution = false
-  custom_policy_json     = data.aws_iam_policy_document.delete_data_state_machine_iam.json
-  create_custom_policy   = true
+  name                     = "${var.prefix}-delete-data-state-machine"
+  service_principal        = "states.amazonaws.com"
+  attach_basic_execution   = false
+  attach_xray_daemon_write = false
+  custom_policy_json       = data.aws_iam_policy_document.delete_data_state_machine_iam.json
+  create_custom_policy     = true
 }
 
 resource "aws_cloudwatch_log_group" "delete_data" {

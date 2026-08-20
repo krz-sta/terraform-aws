@@ -12,6 +12,11 @@ variable "attach_basic_execution" {
   default = true
 }
 
+variable "attach_xray_daemon_write" {
+  type    = bool
+  default = false
+}
+
 variable "custom_policy_json" {
   type    = string
   default = ""

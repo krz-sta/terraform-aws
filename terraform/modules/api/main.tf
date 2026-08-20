@@ -42,9 +42,10 @@ module "api_iam" {
   source   = "../iam"
   for_each = local.api_endpoints
 
-  name                 = "${var.prefix}-${each.key}"
-  custom_policy_json   = each.value.policy
-  create_custom_policy = each.value.create_custom_policy
+  name                     = "${var.prefix}-${each.key}"
+  custom_policy_json       = each.value.policy
+  create_custom_policy     = each.value.create_custom_policy
+  attach_xray_daemon_write = true
 }
 
 module "api_lambda" {
@@ -93,7 +94,8 @@ resource "aws_api_gateway_deployment" "api" {
 }
 
 resource "aws_api_gateway_stage" "api" {
-  stage_name    = "prod"
-  rest_api_id   = aws_api_gateway_rest_api.api.id
-  deployment_id = aws_api_gateway_deployment.api.id
+  stage_name           = "prod"
+  rest_api_id          = aws_api_gateway_rest_api.api.id
+  deployment_id        = aws_api_gateway_deployment.api.id
+  xray_tracing_enabled = true
 }
